@@ -37,7 +37,7 @@ nb_adim = False #voir les nombres adimensionnels
 #CHOICE OF PERTURBATION
 
 IC = 'eta_detroit' #'decent', 'bidecent', 'cent','quadri'
-obstacle = 'none' # 'detroit', 'ile'
+obstacle = 'ile' # 'detroit', 'ile'
 rotating_frame = True
 
 ###############################
@@ -121,8 +121,8 @@ def get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,obstacle):
                     v[k,Ny//3+5:Ny//3+15,26:50] = 0
                 
                 elif obstacle == 'ile':
-                    u[k,Ny//3+5:Ny//3+15,0:24] = 0
-                    v[k,Ny//3+5:Ny//3+15,0:24] = 0
+                    u[k,Ny//3+5:Ny//3+15,20:30] = 0
+                    v[k,Ny//3+5:Ny//3+15,20:30] = 0
                     
     
                 u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx))
@@ -172,17 +172,20 @@ print(etamin,etamax)
 
 if view_1D == True:
     plt.figure()
-    n = 10
+    n = 25
     eps=1
     for i in range(len(t)):
         plt.plot(x,eta[i,:,n]+H)
         plt.xlabel(r'$x$')
         plt.ylabel(r'$H$')
         plt.ylim(np.min(eta),np.max(eta)+eps)
-        plt.title(str(i)+'/'+str(len(t)-1)+r' at $x=$'+str(n))
+        plt.title(str(i)+'/'+str(len(t)-1)+r' at $y=$'+str(n))
         plt.pause(0.01)
         plt.clf()
-    plt.plot(x,eta[-1,:,n])
+    plt.plot(x,eta[-1,:,n]+H)
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$H$')
+    plt.title(str(i)+'/'+str(len(t)-1)+r' at $x=$'+str(n))
 
 
 if view_2D == True:
@@ -203,7 +206,7 @@ if view_2D == True:
 if view_3D == True:
     fig, ax = plt.subplots(1,1,figsize=(10,7),subplot_kw={"projection": "3d"})
     xx,yy=np.meshgrid(x,y)
-    for i in range(len(t)-1):
+    for i in range(len(t)):
 
         fig.suptitle(str(i)+'/'+str(len(t)-1))
         fig3=ax.plot_surface(xx,yy,eta[i,:,:]+H,cmap=cmap)
@@ -216,20 +219,26 @@ if view_3D == True:
 
         plt.pause(0.01)
         ax.clear()
-    fig3=ax.plot_surface(xx,yy,eta[-1,:,:],cmap=cmap)
+    fig3=ax.plot_surface(xx,yy,eta[-1,:,:]+H,cmap=cmap)
     ax.set_xlabel('$x$')
     ax.set_ylabel('$y$')
-    ax.set_zlabel('$\eta$')
+    ax.set_zlabel('$H$')
+    ax.set_zlim(np.min(eta),np.max(eta))
 
 if nb_adim == True:
-    Ro = u/(f*Lx)
-    Fr = u/(np.sqrt(g*Lx))
+    U=u
+    Ro = U/(f*Lx)
+    Fr = U/(np.sqrt(g*H))
+    print(Fr)
     fig,(ax) = plt.subplots(1,2,figsize=(15,7))
-    for i in range(len(t)-1):
+    for i in range(len(t)):
         fig.suptitle(str(i)+'/'+str(len(t)-1))
 
         fig1=ax[0].pcolormesh(x,y,Ro[i,:,:],cmap=cmap,vmin=np.min(Ro),vmax=np.max(Ro))
         fig2=ax[1].pcolormesh(x,y,Fr[i,:,:],cmap=cmap,vmin=np.min(Fr),vmax=np.max(Fr))
+
+        ax[0].set_title(r'$R_o = \frac{u}{f.L}$')
+        ax[1].set_title(r'$F_r = \frac{u}{\sqrt{g.H}}$')
 
         plt.pause(0.01)
         ax[0].clear()

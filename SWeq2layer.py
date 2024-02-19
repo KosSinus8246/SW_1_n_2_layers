@@ -43,8 +43,8 @@ view_cour = False
 #CHOICE OF PERTURBATION
 
 IC = 'eta_detroit' #'decent', 'bidecent', 'cent','quadri'
-obstacle = 'none' #'detroit', 'ile'
-rotating_frame=True
+obstacle = 'ile' #'detroit', 'ile'
+rotating_frame = True
 
 ###############################
 #SPATIAL AND TIME DISCRETISATION
@@ -217,24 +217,28 @@ elif rotating_frame==True:
 if view_1D==True:
     plt.figure()
     n=25
-    eps=1
-    
+    eps=1 
     for i in range(len(t)):
         plt.plot(x,eta1[i,:,n]+H1+H2,label=r'$\eta_1$')
         plt.plot(x,eta2[i,:,n]+H2,label=r'$\eta_2$')
         plt.xlabel(r'$x$')
         plt.ylabel(r'$H$')
         plt.ylim(H2-eps,H2+H1+eps)
-        plt.title(str(i)+'/'+str(len(t))+r' at $x=$'+str(n))
+        plt.title(str(i)+'/'+str(len(t)-1)+r' at $y=$'+str(n))
         plt.legend()
         plt.pause(0.01)
         plt.clf()
+    plt.plot(x,eta1[i,:,n]+H1+H2,label=r'$\eta_1$')
+    plt.plot(x,eta2[i,:,n]+H2,label=r'$\eta_2$')
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$H$')
+    plt.title(str(i)+'/'+str(len(t)-1)+r' at $x=$'+str(n))
         
         
         
 if view_2D==True:
     fig,(ax)=plt.subplots(1,2,figsize=(15,7))
-    for i in range(len(t)-1):
+    for i in range(len(t)):
         fig.suptitle(str(i)+'/'+str(len(t)-1))
 
         fig1=ax[0].pcolormesh(x,y,eta1[i,:,:],cmap=cmap,vmin=np.min(eta1),vmax=np.max(eta1))
@@ -247,17 +251,14 @@ if view_2D==True:
         ax[1].set_ylabel(r'$y$')
         ax[1].set_title(r'$\eta_2$')
 
-        #fig.colorbar(fig1,ax=ax[0],label=r'$\eta_1$')
-
         plt.pause(0.01)
         ax[0].clear()
         ax[1].clear()
 
-
 if view_3D == True:
     fig, ax = plt.subplots(1,1,figsize=(10,7),subplot_kw={"projection": "3d"})
     xx,yy=np.meshgrid(x,y)
-    for i in range(len(t)-1):
+    for i in range(len(t)):
 
         fig.suptitle(str(i)+'/'+str(len(t)-1))
         fig3=ax.plot_surface(xx,yy,eta1[i,:,:]+H1+H2,cmap=cmap)
@@ -273,10 +274,14 @@ if view_3D == True:
         ax.clear()
     ax.plot_surface(xx,yy,eta1[-1,:,:]+H1+H2,cmap=cmap)
     ax.plot_surface(xx,yy,eta2[i,:,:]+H2,cmap=cmap)
+    ax.set_xlabel('$x$')
+    ax.set_ylabel('$y$')
+    ax.set_zlabel('$H$')
+    ax.set_zlim(np.min(eta1),np.max(eta2)+H2)
 
 if view_cour == True:
     fig,(ax)=plt.subplots(1,2,figsize=(15,7))
-    for i in range(len(t)-1):
+    for i in range(len(t)):
         fig.suptitle(str(i)+'/'+str(len(t)-1))
 
         fig1=ax[0].pcolormesh(x,y,eta1[i,:,:],cmap=cmap,vmin=np.min(eta1),vmax=np.max(eta1))
