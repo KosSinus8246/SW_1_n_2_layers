@@ -26,13 +26,8 @@ rho1 = 1010
 rho0 = 1013
 g2= g*(rho1 - rho2)/rho0 #reduced gravity
 print('Reduced gravity : ',g2)
-
 H1=1
 H2=1
-
-rotating_frame=True
-tide=False
-
 cmap='RdBu_r'
 
 ###################################
@@ -42,12 +37,14 @@ view_1D = False
 view_2D = False
 view_3D = True
 
+view_cour = False
+
 ##################################
 #CHOICE OF PERTURBATION
 
-IC='eta_detroit' #'decent', 'bidecent', 'cent','quadri'
-amp_pert=0.05 #amplitude of the perturbation
-detroit = False
+IC = 'eta_detroit' #'decent', 'bidecent', 'cent','quadri'
+obstacle = 'none' #'detroit', 'ile'
+rotating_frame=True
 
 ###############################
 #SPATIAL AND TIME DISCRETISATION
@@ -103,11 +100,6 @@ def gaussian2D(x,y,mx,my):
 ###################################
 #INITIAL CONDITIONS IMPLEMENTATION
 
-if tide==True:
-    T_tide=10
-    for i in range(len(t)-1):
-        eta1[i,:,:]=1e-2*np.cos(t[i]*(2*np.pi)/T_tide)
-
 corr = 1e6 #correction pour la gaussienne 
 
 if IC == 'decent':
@@ -122,7 +114,7 @@ elif IC == 'bidecent':
 ########################################################
 #COMPUTATION
 
-def get_SW_2layer_euler_NR(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,detroit):
+def get_SW_2layer_euler_NR(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,obstacle):
     for k in range(len(t)-1):
         for l in range(len(x)-1):
             for j in range(len(y)-1):
@@ -136,7 +128,7 @@ def get_SW_2layer_euler_NR(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,detroit):
                 v2[k,:,0]=0
                 v2[k,:,-1]=0
 
-                if detroit==True:
+                if obstacle == 'detroit':
                     ####### COTE GAUCHE
                     u1[k,Ny//3+5:Ny//3+15,0:24] = 0
                     v1[k,Ny//3+5:Ny//3+15,0:24] = 0
@@ -148,24 +140,27 @@ def get_SW_2layer_euler_NR(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,detroit):
                     v1[k,Ny//3+5:Ny//3+15,26:50] = 0
                     u2[k,Ny//3+5:Ny//3+15,26:50] = 0
                     v2[k,Ny//3+5:Ny//3+15,26:50] = 0
+                elif obstacle == 'ile':
+                    u1[k,Ny//3+5:Ny//3+15,20:30] = 0
+                    v1[k,Ny//3+5:Ny//3+15,20:30] = 0
+                    u2[k,Ny//3+5:Ny//3+15,20:30] = 0
+                    v2[k,Ny//3+5:Ny//3+15,20:30] = 0
     
                     
-                    #1st layer
+                #1st layer
                 u1[k+1,l,j]=u1[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx))
                 v1[k+1,l,j]=v1[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j-1])/(2*dy))
-                    
                 detadt[k,l,j]=-H2*((u2[k,l+1,j] - u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1] - v2[k,l,j-1])/(2*dy))
-                    
                 eta1[k+1,l,j]=eta1[k,l,j]-dt*(H1*(u1[k,l+1,j]-u1[k,l-1,j])/(2*dx) + (v1[k,l,j+1]-v1[k,l,j-1])/(2*dy)) - detadt[k,l,j]
                     
-                    #2nd layer
+                #2nd layer
                 u2[k+1,l,j]=u2[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx) - g2*(eta2[k,l+1,j]-eta2[k,l-1,j])/(2*dx))
                 v2[k+1,l,j]=v2[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j+1])/(2*dy) - g2*(eta2[k,l,j+1]-eta2[k,l,j+1])/(2*dy))
                 eta2[k+1,l,j]=eta2[k,l,j]-dt*H2*((u2[k,l+1,j]-u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1]-v2[k,l,j-1])/(2*dy))
                         
     return u1,v1,eta1,u2,v2,eta2
 
-def get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,detroit):
+def get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,obstacle):
     for k in range(len(t)-1):
         for l in range(len(x)-1):
             for j in range(len(y)-1):
@@ -179,7 +174,7 @@ def get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,detroit):
                 v2[k,:,0]=0
                 v2[k,:,-1]=0
 
-                if detroit==True:
+                if obstacle == 'detroit':
                     ####### COTE GAUCHE
                     u1[k,Ny//3+5:Ny//3+15,0:24] = 0
                     v1[k,Ny//3+5:Ny//3+15,0:24] = 0
@@ -191,14 +186,17 @@ def get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,detroit):
                     v1[k,Ny//3+5:Ny//3+15,26:50] = 0
                     u2[k,Ny//3+5:Ny//3+15,26:50] = 0
                     v2[k,Ny//3+5:Ny//3+15,26:50] = 0
+                elif obstacle == 'ile':
+                    u1[k,Ny//3+5:Ny//3+15,20:30] = 0
+                    v1[k,Ny//3+5:Ny//3+15,20:30] = 0
+                    u2[k,Ny//3+5:Ny//3+15,20:30] = 0
+                    v2[k,Ny//3+5:Ny//3+15,20:30] = 0
     
                 
                 #1st layer
                 u1[k+1,l,j]=u1[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx) + f*v1[k,l,j])
                 v1[k+1,l,j]=v1[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j-1])/(2*dy) - f*u1[k,l,j])
-                    
                 detadt[k,l,j]=-H2*((u2[k,l+1,j] - u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1] - v2[k,l,j-1])/(2*dy))
-                    
                 eta1[k+1,l,j]=eta1[k,l,j]-dt*(H1*(u1[k,l+1,j]-u1[k,l-1,j])/(2*dx) + (v1[k,l,j+1]-v1[k,l,j-1])/(2*dy)) - detadt[k,l,j]
                     
                 #2nd layer
@@ -209,9 +207,9 @@ def get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,detroit):
     return u1,v1,eta1,u2,v2,eta2
 
 if rotating_frame==False:
-    u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_NR(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,detroit)
+    u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_NR(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,obstacle)
 elif rotating_frame==True:
-    u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,detroit)
+    u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,obstacle)
 
 ###############################################################
 #PLOT
@@ -239,8 +237,17 @@ if view_2D==True:
     for i in range(len(t)-1):
         fig.suptitle(str(i)+'/'+str(len(t)-1))
 
-        fig1=ax[0].contourf(x,y,eta1[i,:,:],cmap=cmap,vmin=np.min(eta1),vmax=np.max(eta1))
-        fig2=ax[1].contourf(x,y,eta2[i,:,:],cmap=cmap,vmin=np.min(eta2),vmax=np.max(eta2))
+        fig1=ax[0].pcolormesh(x,y,eta1[i,:,:],cmap=cmap,vmin=np.min(eta1),vmax=np.max(eta1))
+        fig2=ax[1].pcolormesh(x,y,eta2[i,:,:],cmap=cmap,vmin=np.min(eta2),vmax=np.max(eta2))
+
+        ax[0].set_xlabel(r'$x$')
+        ax[0].set_ylabel(r'$y$')
+        ax[0].set_title(r'$\eta_1$')
+        ax[1].set_xlabel(r'$x$')
+        ax[1].set_ylabel(r'$y$')
+        ax[1].set_title(r'$\eta_2$')
+
+        #fig.colorbar(fig1,ax=ax[0],label=r'$\eta_1$')
 
         plt.pause(0.01)
         ax[0].clear()
@@ -256,6 +263,8 @@ if view_3D == True:
         fig3=ax.plot_surface(xx,yy,eta1[i,:,:]+H1+H2,cmap=cmap)
         ax.plot_surface(xx,yy,eta2[i,:,:]+H2,cmap=cmap)
 
+        ax.set_zlim(np.min(eta1),np.max(eta2)+H2)
+
         ax.set_xlabel('$x$')
         ax.set_ylabel('$y$')
         ax.set_zlabel('$H$')
@@ -264,6 +273,29 @@ if view_3D == True:
         ax.clear()
     ax.plot_surface(xx,yy,eta1[-1,:,:]+H1+H2,cmap=cmap)
     ax.plot_surface(xx,yy,eta2[i,:,:]+H2,cmap=cmap)
+
+if view_cour == True:
+    fig,(ax)=plt.subplots(1,2,figsize=(15,7))
+    for i in range(len(t)-1):
+        fig.suptitle(str(i)+'/'+str(len(t)-1))
+
+        fig1=ax[0].pcolormesh(x,y,eta1[i,:,:],cmap=cmap,vmin=np.min(eta1),vmax=np.max(eta1))
+        ax[0].quiver(x,y,u1[i,:,:],v1[i,:,:])
+        fig2=ax[1].pcolormesh(x,y,eta2[i,:,:],cmap=cmap,vmin=np.min(eta2),vmax=np.max(eta2))
+        ax[1].quiver(x,y,u2[i,:,:],v2[i,:,:])
+
+        ax[0].set_xlabel(r'$x$')
+        ax[0].set_ylabel(r'$y$')
+        ax[0].set_title(r'$\eta_1$')
+        ax[1].set_xlabel(r'$x$')
+        ax[1].set_ylabel(r'$y$')
+        ax[1].set_title(r'$\eta_2$')
+
+        #fig.colorbar(fig1,ax=ax[0],label=r'$\eta_1$')
+
+        plt.pause(0.01)
+        ax[0].clear()
+        ax[1].clear()
         
 plt.show()
 

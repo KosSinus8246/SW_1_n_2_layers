@@ -21,7 +21,6 @@ f = 2*omega*np.sin(45)
 #f=2e-2 #pour tester coriolis
 g = 9.81
 H = 1
-
 cmap = 'RdBu_r'
 
 ###################################
@@ -32,21 +31,14 @@ view_2D = False
 view_3D = True
 
 view_cour = False #voir les vecteurs sur view_2D
-nb_adim = 'none' #voir les nombres adimensionnels : 'rossby' ou 'froude'
-
+nb_adim = False #voir les nombres adimensionnels
 
 ##################################
 #CHOICE OF PERTURBATION
 
 IC = 'eta_detroit' #'decent', 'bidecent', 'cent','quadri'
-amp_pert = 0.05 #amplitude of the perturbation
-detroit = True
-
+obstacle = 'none' # 'detroit', 'ile'
 rotating_frame = True
-tide = False #marée
-
-#################################
-#CONDITION Lx > Nx #
 
 ###############################
 #SPATIAL AND TIME DISCRETISATION
@@ -93,16 +85,8 @@ def gaussian2D(x,y,mx,my):
 
     return z
 
-
-
-
 ###################################
 #INITIAL CONDITIONS IMPLEMENTATION
-
-if tide == True:
-    T_tide = 100
-    for i in range(len(t)-1):
-        eta[i,0,:] = 1e-2*np.cos(t[i]*(2*np.pi)/T_tide)
 
 corr = 1e6 #correction pour la gaussienne 
 
@@ -115,21 +99,10 @@ elif IC == 'eta_detroit':
 elif IC == 'bidecent':
     eta[0,:,:] = gaussian2D(x,y,Lx//2,Ly//2)*corr + gaussian2D(x,y,Lx//6,Ly//6)*corr
 
-#################################
-#BC : domaine fermé
-
-#rigide : 
-#u nul en 0 et -1 x
-#v nul en 0 et -1 y
-
-#rigide et visqueux :
-#u nul en 0 et -1 x et 0 et -1 y
-#v nul en 0 et -1 y et 0 et -1 x
-
 ########################################################
 #COMPUTATION
 
-def get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,detroit):
+def get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,obstacle):
     for k in range(len(t)-1):
         for l in range(len(x)-1):
             for j in range(len(y)-1):
@@ -138,7 +111,7 @@ def get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,detroit):
                 v[k,:,0] = 0
                 v[k,:,-1] = 0
 
-                if detroit==True:
+                if obstacle == 'detroit':
                     ####### COTE GAUCHE
                     u[k,Ny//3+5:Ny//3+15,0:24] = 0
                     v[k,Ny//3+5:Ny//3+15,0:24] = 0
@@ -146,6 +119,11 @@ def get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,detroit):
                     ####### COTE DROITE
                     u[k,Ny//3+5:Ny//3+15,26:50] = 0
                     v[k,Ny//3+5:Ny//3+15,26:50] = 0
+                
+                elif obstacle == 'ile':
+                    u[k,Ny//3+5:Ny//3+15,0:24] = 0
+                    v[k,Ny//3+5:Ny//3+15,0:24] = 0
+                    
     
                 u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx))
                 v[k+1,l,j] = v[k,l,j]-dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy))
@@ -153,7 +131,7 @@ def get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,detroit):
 
     return u,v,eta
 
-def get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,detroit):
+def get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,obstacle):
     for k in range(len(t)-1):
         for l in range(len(x)-1):
             for j in range(len(y)-1):
@@ -162,7 +140,7 @@ def get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,detroit):
                 v[k,:,0] = 0
                 v[k,:,-1] = 0
 
-                if detroit==True:
+                if obstacle == 'detroit':
                     ####### COTE GAUCHE
                     u[k,Ny//3+5:Ny//3+15,0:24] = 0
                     v[k,Ny//3+5:Ny//3+15,0:24] = 0
@@ -170,9 +148,11 @@ def get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,detroit):
                     ####### COTE DROITE
                     u[k,Ny//3+5:Ny//3+15,26:50] = 0
                     v[k,Ny//3+5:Ny//3+15,26:50] = 0
+
+                elif obstacle == 'ile':
+                    u[k,Ny//3+5:Ny//3+15,20:30] = 0
+                    v[k,Ny//3+5:Ny//3+15,20:30] = 0
     
-                
-            
                 u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx) + f*v[k,l,j])
                 v[k+1,l,j] = v[k,l,j]-dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy) - f*u[k,l,j])
                 eta[k+1,l,j] = eta[k,l,j]-dt*(H*(u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy))        
@@ -180,9 +160,9 @@ def get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,detroit):
     return u,v,eta
     
 if rotating_frame == False:
-    u,v,eta = get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,detroit)
+    u,v,eta = get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,obstacle)
 elif rotating_frame == True:
-    u,v,eta = get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,detroit)
+    u,v,eta = get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,obstacle)
   
 ###############################################################
 #PLOT
@@ -226,7 +206,7 @@ if view_3D == True:
     for i in range(len(t)-1):
 
         fig.suptitle(str(i)+'/'+str(len(t)-1))
-        fig3=ax.plot_surface(xx,yy,eta[i,:,:],cmap=cmap)
+        fig3=ax.plot_surface(xx,yy,eta[i,:,:]+H,cmap=cmap)
         ax.set_zlim(np.min(eta),np.max(eta))
 
         ax.set_xlabel('$x$')
@@ -241,31 +221,19 @@ if view_3D == True:
     ax.set_ylabel('$y$')
     ax.set_zlabel('$\eta$')
 
-
-if nb_adim == 'rossby':
+if nb_adim == True:
     Ro = u/(f*Lx)
-    plt.figure()
-    for i in range(len(t)-1):
-        plt.pcolormesh(x,y,Ro[i,:,:],cmap=cmap,vmin=np.min(Ro),vmax=np.max(Ro))
-        plt.colorbar(extend="both",label=r'$R_o$')
-        plt.xlabel(r'$x$')
-        plt.ylabel(r'$y$')
-        plt.title(str(i)+'/'+str(len(t)-2))
-        #plt.savefig('/home/dmoreau/Bureau/PDE/gif_shallow/im_'+str(i+1))
-        plt.pause(0.01)
-        plt.clf()
-elif nb_adim == 'froude':
     Fr = u/(np.sqrt(g*Lx))
-    plt.figure()
+    fig,(ax) = plt.subplots(1,2,figsize=(15,7))
     for i in range(len(t)-1):
-        plt.pcolormesh(x,y,Fr[i,:,:],cmap=cmap,vmin=np.min(Fr),vmax=np.max(Fr))
-        plt.colorbar(extend="both",label=r'$F_r$')
-        plt.xlabel(r'$x$')
-        plt.ylabel(r'$y$')
-        plt.title(str(i)+'/'+str(len(t)-2))
-        #plt.savefig('/home/dmoreau/Bureau/PDE/gif_shallow/im_'+str(i+1))
+        fig.suptitle(str(i)+'/'+str(len(t)-1))
+
+        fig1=ax[0].pcolormesh(x,y,Ro[i,:,:],cmap=cmap,vmin=np.min(Ro),vmax=np.max(Ro))
+        fig2=ax[1].pcolormesh(x,y,Fr[i,:,:],cmap=cmap,vmin=np.min(Fr),vmax=np.max(Fr))
+
         plt.pause(0.01)
-        plt.clf()
+        ax[0].clear()
+        ax[1].clear()
 
 
 if view_cour == True:
@@ -282,3 +250,19 @@ if view_cour == True:
         plt.clf()
     
 plt.show()
+
+
+'''
+#################################
+#BC : domaine fermé
+
+#rigide : 
+#u nul en 0 et -1 x
+#v nul en 0 et -1 y
+
+#rigide et visqueux :
+#u nul en 0 et -1 x et 0 et -1 y
+#v nul en 0 et -1 y et 0 et -1 x
+
+########################################################
+#COMPUTATION'''
