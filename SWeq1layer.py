@@ -18,10 +18,10 @@ mpl.rcParams['font.size'] = 15
 
 omega = 2*np.pi/(24*3600)
 f = 2*omega*np.sin(45)
-#f=2e-2 #pour tester coriolis
 g = 9.81
-H = 1
 cmap = 'RdBu_r'
+#f=2e-2 #pour tester coriolis
+#H = 1 #replaced by a matrix for topo
 
 ###################################
 #PLOT SELECTION
@@ -36,8 +36,8 @@ nb_adim = False #voir les nombres adimensionnels
 ##################################
 #CHOICE OF PERTURBATION
 
-IC = 'eta_detroit' #'decent', 'bidecent', 'cent','quadri'
-obstacle = 'ile' # 'detroit', 'ile'
+IC = 'eta_detroit' #'decent', 'bidecent', 'cent','eta_detroit'
+obstacle = 'none' # 'detroit', 'ile'
 rotating_frame = True
 
 ###############################
@@ -65,6 +65,13 @@ t = np.arange(0,time,dt)
 u = np.zeros([len(t),len(x),len(y)])
 v = np.zeros([len(t),len(x),len(y)])
 eta = np.zeros([len(t),len(x),len(y)])
+
+H = np.ones([len(x),len(y)])
+
+#sloped bottom
+# sH = np.linspace(0,0.5,len(y))
+# topo = H*sH
+# H = H-topo 
 
 
 def gaussian2D(x,y,mx,my):
@@ -127,7 +134,7 @@ def get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,obstacle):
     
                 u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx))
                 v[k+1,l,j] = v[k,l,j]-dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy))
-                eta[k+1,l,j] = eta[k,l,j]-dt*(H*(u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy))
+                eta[k+1,l,j] = eta[k,l,j]-dt*(H[l,j]*(u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy))
 
     return u,v,eta
 
@@ -155,7 +162,7 @@ def get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,obstacle):
     
                 u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx) + f*v[k,l,j])
                 v[k+1,l,j] = v[k,l,j]-dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy) - f*u[k,l,j])
-                eta[k+1,l,j] = eta[k,l,j]-dt*(H*(u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy))        
+                eta[k+1,l,j] = eta[k,l,j]-dt*(H[l,j]*(u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy))        
     
     return u,v,eta
     
@@ -166,23 +173,20 @@ elif rotating_frame == True:
   
 ###############################################################
 #PLOT
-    
-etamax, etamin = np.min(eta), np.max(eta)
-print(etamin,etamax)
 
 if view_1D == True:
     plt.figure()
     n = 25
     eps=1
     for i in range(len(t)):
-        plt.plot(x,eta[i,:,n]+H)
+        plt.plot(x,eta[i,:,n]+H[:,n])
         plt.xlabel(r'$x$')
         plt.ylabel(r'$H$')
         plt.ylim(np.min(eta),np.max(eta)+eps)
         plt.title(str(i)+'/'+str(len(t)-1)+r' at $y=$'+str(n))
         plt.pause(0.01)
         plt.clf()
-    plt.plot(x,eta[-1,:,n]+H)
+    plt.plot(x,eta[-1,:,n]+H[:,n])
     plt.xlabel(r'$x$')
     plt.ylabel(r'$H$')
     plt.title(str(i)+'/'+str(len(t)-1)+r' at $x=$'+str(n))

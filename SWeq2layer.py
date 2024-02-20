@@ -26,8 +26,8 @@ rho1 = 1010
 rho0 = 1013
 g2= g*(rho1 - rho2)/rho0 #reduced gravity
 print('Reduced gravity : ',g2)
-H1=1
-H2=1
+#H1=1 #replaced with a matrix for topo
+#H2=1
 cmap='RdBu_r'
 
 ###################################
@@ -42,8 +42,8 @@ view_cour = False
 ##################################
 #CHOICE OF PERTURBATION
 
-IC = 'eta_detroit' #'decent', 'bidecent', 'cent','quadri'
-obstacle = 'ile' #'detroit', 'ile'
+IC = 'eta_detroit' #'decent', 'bidecent', 'cent','eta_detroit'
+obstacle = 'none' #'detroit', 'ile'
 rotating_frame = True
 
 ###############################
@@ -64,19 +64,22 @@ time = 1500 #max
 Nt = time/dt
 print('Nombre de cellules temporelles : ',Nt)
 
-x=np.arange(0,Lx,dx)
-y=np.arange(0,Ly,dy)
-t=np.arange(0,time,dt)
+x = np.arange(0,Lx,dx)
+y = np.arange(0,Ly,dy)
+t = np.arange(0,time,dt)
 
-u1=np.zeros([len(t),len(x),len(y)])
-v1=np.zeros([len(t),len(x),len(y)])
-eta1=np.zeros([len(t),len(x),len(y)])
+u1 = np.zeros([len(t),len(x),len(y)])
+v1 = np.zeros([len(t),len(x),len(y)])
+eta1 = np.zeros([len(t),len(x),len(y)])
 
-u2=np.zeros([len(t),len(x),len(y)])
-v2=np.zeros([len(t),len(x),len(y)])
-eta2=np.zeros([len(t),len(x),len(y)])
+u2 = np.zeros([len(t),len(x),len(y)])
+v2 = np.zeros([len(t),len(x),len(y)])
+eta2 = np.zeros([len(t),len(x),len(y)])
 
-detadt=np.zeros([len(t),len(x),len(y)])
+detadt = np.zeros([len(t),len(x),len(y)])
+
+H1 = np.ones([len(x),len(y)])*1
+H2 = np.ones([len(x),len(y)])*1
 
 def gaussian2D(x,y,mx,my):
     from scipy.stats import multivariate_normal
@@ -150,13 +153,13 @@ def get_SW_2layer_euler_NR(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,obstacle):
                 #1st layer
                 u1[k+1,l,j]=u1[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx))
                 v1[k+1,l,j]=v1[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j-1])/(2*dy))
-                detadt[k,l,j]=-H2*((u2[k,l+1,j] - u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1] - v2[k,l,j-1])/(2*dy))
-                eta1[k+1,l,j]=eta1[k,l,j]-dt*(H1*(u1[k,l+1,j]-u1[k,l-1,j])/(2*dx) + (v1[k,l,j+1]-v1[k,l,j-1])/(2*dy)) - detadt[k,l,j]
+                detadt[k,l,j]=-H2[l,j]*((u2[k,l+1,j] - u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1] - v2[k,l,j-1])/(2*dy))
+                eta1[k+1,l,j]=eta1[k,l,j]-dt*(H1[l,j]*(u1[k,l+1,j]-u1[k,l-1,j])/(2*dx) + (v1[k,l,j+1]-v1[k,l,j-1])/(2*dy)) - detadt[k,l,j]
                     
                 #2nd layer
                 u2[k+1,l,j]=u2[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx) - g2*(eta2[k,l+1,j]-eta2[k,l-1,j])/(2*dx))
                 v2[k+1,l,j]=v2[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j+1])/(2*dy) - g2*(eta2[k,l,j+1]-eta2[k,l,j+1])/(2*dy))
-                eta2[k+1,l,j]=eta2[k,l,j]-dt*H2*((u2[k,l+1,j]-u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1]-v2[k,l,j-1])/(2*dy))
+                eta2[k+1,l,j]=eta2[k,l,j]-dt*H2[l,j]*((u2[k,l+1,j]-u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1]-v2[k,l,j-1])/(2*dy))
                         
     return u1,v1,eta1,u2,v2,eta2
 
@@ -196,13 +199,13 @@ def get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,obstacle):
                 #1st layer
                 u1[k+1,l,j]=u1[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx) + f*v1[k,l,j])
                 v1[k+1,l,j]=v1[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j-1])/(2*dy) - f*u1[k,l,j])
-                detadt[k,l,j]=-H2*((u2[k,l+1,j] - u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1] - v2[k,l,j-1])/(2*dy))
-                eta1[k+1,l,j]=eta1[k,l,j]-dt*(H1*(u1[k,l+1,j]-u1[k,l-1,j])/(2*dx) + (v1[k,l,j+1]-v1[k,l,j-1])/(2*dy)) - detadt[k,l,j]
+                detadt[k,l,j]=-H2[l,j]*((u2[k,l+1,j] - u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1] - v2[k,l,j-1])/(2*dy))
+                eta1[k+1,l,j]=eta1[k,l,j]-dt*(H1[l,j]*(u1[k,l+1,j]-u1[k,l-1,j])/(2*dx) + (v1[k,l,j+1]-v1[k,l,j-1])/(2*dy)) - detadt[k,l,j]
                     
                 #2nd layer
                 u2[k+1,l,j]=u2[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx) - g2*(eta2[k,l+1,j]-eta2[k,l-1,j])/(2*dx)+f*v2[k,l,j])
                 v2[k+1,l,j]=v2[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j+1])/(2*dy) - g2*(eta2[k,l,j+1]-eta2[k,l,j+1])/(2*dy)-f*u2[k,l,j])
-                eta2[k+1,l,j]=eta2[k,l,j]-dt*H2*((u2[k,l+1,j]-u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1]-v2[k,l,j-1])/(2*dy))
+                eta2[k+1,l,j]=eta2[k,l,j]-dt*H2[l,j]*((u2[k,l+1,j]-u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1]-v2[k,l,j-1])/(2*dy))
                         
     return u1,v1,eta1,u2,v2,eta2
 
@@ -219,17 +222,17 @@ if view_1D==True:
     n=25
     eps=1 
     for i in range(len(t)):
-        plt.plot(x,eta1[i,:,n]+H1+H2,label=r'$\eta_1$')
-        plt.plot(x,eta2[i,:,n]+H2,label=r'$\eta_2$')
+        plt.plot(x,eta1[i,:,n]+H1[:,n]+H2[:,n],label=r'$\eta_1$')
+        plt.plot(x,eta2[i,:,n]+H2[:,n],label=r'$\eta_2$')
         plt.xlabel(r'$x$')
         plt.ylabel(r'$H$')
-        plt.ylim(H2-eps,H2+H1+eps)
+        plt.ylim(np.min(H2[:,n])-eps,np.max(H2[:,n]+H1[:,n])+eps)
         plt.title(str(i)+'/'+str(len(t)-1)+r' at $y=$'+str(n))
         plt.legend()
         plt.pause(0.01)
         plt.clf()
-    plt.plot(x,eta1[i,:,n]+H1+H2,label=r'$\eta_1$')
-    plt.plot(x,eta2[i,:,n]+H2,label=r'$\eta_2$')
+    plt.plot(x,eta1[i,:,n]+H1[:,n]+H2[:,n],label=r'$\eta_1$')
+    plt.plot(x,eta2[i,:,n]+H2[:,n],label=r'$\eta_2$')
     plt.xlabel(r'$x$')
     plt.ylabel(r'$H$')
     plt.title(str(i)+'/'+str(len(t)-1)+r' at $x=$'+str(n))
@@ -264,7 +267,7 @@ if view_3D == True:
         fig3=ax.plot_surface(xx,yy,eta1[i,:,:]+H1+H2,cmap=cmap)
         ax.plot_surface(xx,yy,eta2[i,:,:]+H2,cmap=cmap)
 
-        ax.set_zlim(np.min(eta1),np.max(eta2)+H2)
+        ax.set_zlim(np.min(eta1),np.max(eta2)+np.max(H2+H1))
 
         ax.set_xlabel('$x$')
         ax.set_ylabel('$y$')
@@ -277,7 +280,7 @@ if view_3D == True:
     ax.set_xlabel('$x$')
     ax.set_ylabel('$y$')
     ax.set_zlabel('$H$')
-    ax.set_zlim(np.min(eta1),np.max(eta2)+H2)
+    ax.set_zlim(np.min(eta1),np.max(eta2)+np.max(H2+H1))
 
 if view_cour == True:
     fig,(ax)=plt.subplots(1,2,figsize=(15,7))
