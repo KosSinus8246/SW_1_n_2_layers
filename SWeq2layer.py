@@ -35,7 +35,7 @@ cmap='RdBu_r'
 
 view_1D = False
 view_2D = False
-view_3D = True
+view_3D = False
 
 view_cour = False
 
@@ -308,7 +308,29 @@ if view_cour == True:
 plt.show()
 
 
+def save_nc(u1,v1,u2,v2,eta1,eta2):
+    from netCDF4 import Dataset
+    # Specify the netCDF file name
+    netcdf_filename = 'output.nc'
+    # Create a netCDF file in write mode
+    with Dataset(netcdf_filename, 'w', format='NETCDF4') as ncfile:
+        # Create dimensions matching the shape of your arrays ## common for all variables in t,x,y
+        dim11 = ncfile.createDimension('time', eta1.shape[0])
+        dim12 = ncfile.createDimension('x', eta1.shape[1])
+        dim13 = ncfile.createDimension('y', eta1.shape[2])
+        # Create variables and store the arrays
+        var1 = ncfile.createVariable('eta1', 'f8', ('time','x', 'y'))
+        var1[:] = eta1
+        var2 = ncfile.createVariable('u1', 'f8', ('time','x', 'y'))
+        var2[:] = u1  
+        var3 = ncfile.createVariable('v1', 'f8', ('time','x', 'y'))
+        var3[:] = v1    
 
+        var11 = ncfile.createVariable('eta2', 'f8', ('time','x', 'y'))
+        var11[:] = eta2
+        var22 = ncfile.createVariable('u2', 'f8', ('time','x', 'y'))
+        var22[:] = u2 
+        var33 = ncfile.createVariable('v2', 'f8', ('time','x', 'y'))
+        var33[:] = v2       
 
-
-
+save_nc(u1,v1,u2,v2,eta1,eta2)

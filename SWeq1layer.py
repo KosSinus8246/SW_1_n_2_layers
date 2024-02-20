@@ -264,6 +264,26 @@ if view_cour == True:
     
 plt.show()
 
+def save_nc(u,v,eta):
+    from netCDF4 import Dataset
+    # Specify the netCDF file name
+    netcdf_filename = 'output.nc'
+    # Create a netCDF file in write mode
+    with Dataset(netcdf_filename, 'w', format='NETCDF4') as ncfile:
+        # Create dimensions matching the shape of your arrays ## common for all variables in t,x,y
+        dim11 = ncfile.createDimension('time', eta.shape[0])
+        dim12 = ncfile.createDimension('x', eta.shape[1])
+        dim13 = ncfile.createDimension('y', eta.shape[2])
+        # Create variables and store the arrays
+        var1 = ncfile.createVariable('eta', 'f8', ('time','x', 'y'))
+        var1[:] = eta
+        var2 = ncfile.createVariable('u', 'f8', ('time','x', 'y'))
+        var2[:] = u   
+        var3 = ncfile.createVariable('v', 'f8', ('time','x', 'y'))
+        var3[:] = v      
+
+save_nc(u,v,eta)
+
 
 '''
 #################################
