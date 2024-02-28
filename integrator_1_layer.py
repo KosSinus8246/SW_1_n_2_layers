@@ -65,13 +65,13 @@ def get_SW_LP_R(t,x,y,Ny,u,v,eta,dx,dy,dt,g,H,f,obstacle):
 
                 #####################################################
                 #SCHEMA MIXTE : 1) Euler ; 2) LP ; 3) Euler ; 4) LP.
-                if t[k] <=tspawn:
+                if t[k] <= tspawn:
                     #print('Euler init')
                     u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx) + f*v[k,l,j])
                     v[k+1,l,j] = v[k,l,j]-dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy) - f*u[k,l,j])
                     eta[k+1,l,j] = eta[k,l,j]-dt*(H[l,j]*((u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy)))
 
-                elif (t[k] >tspawn):
+                elif (t[k] > tspawn):
                     #print('Leap-Frog')
                     u[k+1,l,j] = u[k-1,l,j]-2*dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx) + f*v[k,l,j])
                     v[k+1,l,j] = v[k-1,l,j]-2*dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy) - f*u[k,l,j])
@@ -114,25 +114,25 @@ def get_SW_LP_mixte_R(t,x,y,Ny,Nt,u,v,eta,dx,dy,dt,g,H,f,obstacle):
 
                 #####################################################
                 #SCHEMA MIXTE : 1) Euler ; 2) LP ; 3) Euler ; 4) LP.
-                if t[k] <=tspawn:
+                if t[k] <= tspawn:
                     #print('Euler init')
                     u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx) + f*v[k,l,j])
                     v[k+1,l,j] = v[k,l,j]-dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy) - f*u[k,l,j])
                     eta[k+1,l,j] = eta[k,l,j]-dt*(H[l,j]*((u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy)))
 
-                elif (t[k] >tspawn) & (t[k]<=tmixt):
+                elif (t[k] > tspawn) & (t[k]<=tmixt):
                     #print('Leap-Frog')
                     u[k+1,l,j] = u[k-1,l,j]-2*dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx) + f*v[k,l,j])
                     v[k+1,l,j] = v[k-1,l,j]-2*dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy) - f*u[k,l,j])
                     eta[k+1,l,j] = eta[k-1,l,j]-2*dt*(H[l,j]*((u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy)))
                 
-                elif (t[k] >tmixt) & (t[k]<=tmixt+dmixt):
+                elif (t[k] > tmixt) & (t[k]<=tmixt+dmixt):
                     #print('Euler')
                     u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx) + f*v[k,l,j])
                     v[k+1,l,j] = v[k,l,j]-dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy) - f*u[k,l,j])
                     eta[k+1,l,j] = eta[k,l,j]-dt*(H[l,j]*((u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy)))
                 
-                elif t[k]>tmixt+dmixt:
+                elif t[k] > tmixt+dmixt:
                     #print('Leap-Frog')
                     u[k+1,l,j] = u[k-1,l,j]-2*dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx) + f*v[k,l,j])
                     v[k+1,l,j] = v[k-1,l,j]-2*dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy) - f*u[k,l,j])

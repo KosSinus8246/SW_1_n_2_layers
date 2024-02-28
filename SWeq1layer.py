@@ -24,7 +24,7 @@ cmap = 'RdBu_r'
 #f=2e-2 #pour tester coriolis
 #H = 1 #replaced by a matrix for topo
 
-integrator = 'LP' #'Euler' or 'LP_m'
+integrator = 'LP_m' #'Euler' or 'LP_m'
 save_netcf = True #choose if you want to save variables in netCDF
 
 ###################################
@@ -40,7 +40,7 @@ nb_adim = False #voir les nombres adimensionnels
 ##################################
 #CHOICE OF PERTURBATION
 
-IC = 'eta_detroit' #'decent', 'bidecent', 'cent','eta_detroit'
+IC = 'decent' #'decent', 'bidecent', 'cent','eta_detroit'
 obstacle = 'none' # 'detroit', 'ile'
 rotating_frame = True
 
@@ -99,13 +99,13 @@ def gaussian2D(x,y,mx,my):
 corr = 1e6 #correction pour la gaussienne 
 
 if IC == 'decent':
-    eta[0,:,:] = gaussian2D(x,y,Lx//6,Ly//6)*corr
+    eta[0,:,:] = -gaussian2D(x,y,Lx//6,Ly//6)*corr
 elif IC == 'cent':
-    eta[0,:,:] = gaussian2D(x,y,Lx//2,Ly//2)*corr
+    eta[0,:,:] = -gaussian2D(x,y,Lx//2,Ly//2)*corr
 elif IC == 'eta_detroit':
-    eta[0,:,:] = gaussian2D(x,y,Lx//2,Ly//6)*corr
+    eta[0,:,:] = -gaussian2D(x,y,Lx//2,Ly//6)*corr
 elif IC == 'bidecent':
-    eta[0,:,:] = gaussian2D(x,y,Lx//2,Ly//2)*corr + gaussian2D(x,y,Lx//6,Ly//6)*corr
+    eta[0,:,:] = -gaussian2D(x,y,Lx//2,Ly//2)*corr + gaussian2D(x,y,Lx//6,Ly//6)*corr
 
 ########################################################
 #COMPUTATION

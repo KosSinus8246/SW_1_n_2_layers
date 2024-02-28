@@ -30,13 +30,13 @@ print('Reduced gravity : ',g2)
 #H2=1
 #f=1e-2 #pour tester
 
-integrator = 'Euler' #'Euler' or 'LP'
+integrator = 'LP' #'Euler' or 'LP'
 save_netcf = True #choose if you want to save variables in netCDF
 
 ###################################
 #PLOT SELECTION
 
-view_1D = False
+view_1D = True
 view_2D = False
 view_3D = False
 
@@ -45,7 +45,7 @@ view_cour = False
 ##################################
 #CHOICE OF PERTURBATION
 
-IC = 'eta_detroit' #'decent', 'bidecent', 'cent','eta_detroit'
+IC = 'decent' #'decent', 'bidecent', 'cent','eta_detroit'
 obstacle = 'none' #'detroit', 'ile'
 rotating_frame = True
 
@@ -61,8 +61,10 @@ Ny = 50
 dx = Lx/Nx
 dy = Ly/Ny
 
-dt = 6
-time = 1500 #max
+#dt = 6 #max euler
+dt = 20 #max LP
+#time = 1500 #max euler
+time = 5000 #max LP
 
 Nt = time/dt
 print('Nombre de cellules temporelles : ',Nt)
@@ -109,30 +111,36 @@ def gaussian2D(x,y,mx,my):
 corr = 1e6 #correction pour la gaussienne 
 
 if IC == 'decent':
-    eta1[0,:,:] = gaussian2D(x,y,Lx//6,Ly//6)*corr
+    eta1[0,:,:] = -gaussian2D(x,y,Lx//6,Ly//6)*corr
 elif IC == 'cent':
-    eta1[0,:,:] = gaussian2D(x,y,Lx//2,Ly//2)*corr
+    eta1[0,:,:] = -gaussian2D(x,y,Lx//2,Ly//2)*corr
 elif IC == 'eta_detroit':
-    eta1[0,:,:] = gaussian2D(x,y,Lx//2,Ly//6)*corr
+    eta1[0,:,:] = -gaussian2D(x,y,Lx//2,Ly//6)*corr
 elif IC == 'bidecent':
-    eta1[0,:,:] = gaussian2D(x,y,Lx//2,Ly//2)*corr + gaussian2D(x,y,Lx//6,Ly//6)*corr
+    eta1[0,:,:] = -gaussian2D(x,y,Lx//2,Ly//2)*corr + gaussian2D(x,y,Lx//6,Ly//6)*corr
 
 ########################################################
 #COMPUTATION
 
 if integrator == 'Euler':
     print('Integration : Euler')
-    if rotating_frame==False:
+    if rotating_frame == False:
         f = 0
         print('Coriolis parameter : ',f)
         u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_R(t,x,y,Ny,u1,v1,eta1,u2,v2,eta2,detadt,dx,dy,dt,g,g2,H1,H2,f,obstacle)
-    elif rotating_frame==True:
+    elif rotating_frame == True:
         print('Coriolis parameter : ',f)
         u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_R(t,x,y,Ny,u1,v1,eta1,u2,v2,eta2,detadt,dx,dy,dt,g,g2,H1,H2,f,obstacle)
 
 elif integrator == 'LP':
     print('Integration : Leap-Frog')
-    print('Not yet implemented')
+    if rotating_frame == False:
+        f=0
+        print('Coriolis parameter : ',f)
+        u1,v1,eta1,u2,v2,eta2 = get_SW_2layer_LP_R(t,x,y,Ny,u1,v1,eta1,u2,v2,eta2,detadt,dx,dy,dt,g,g2,H1,H2,f,obstacle)
+    elif rotating_frame == True:
+        print('Coriolis parameter : ',f)
+        u1,v1,eta1,u2,v2,eta2 = get_SW_2layer_LP_R(t,x,y,Ny,u1,v1,eta1,u2,v2,eta2,detadt,dx,dy,dt,g,g2,H1,H2,f,obstacle)
 
 elif integrator == 'LP_m':
     print('Integration : Leap-Frog/Euler')
