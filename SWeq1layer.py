@@ -24,7 +24,7 @@ cmap = 'RdBu_r'
 #f=2e-2 #pour tester coriolis
 #H = 1 #replaced by a matrix for topo
 
-integrator = 'LP_m' #'Euler' or 'LP_m'
+integrator = 'LP' #'Euler' or 'LP_m'
 save_netcf = True #choose if you want to save variables in netCDF
 
 ###################################
@@ -111,6 +111,7 @@ elif IC == 'bidecent':
 #COMPUTATION
 
 if integrator == 'Euler':
+    print('Integration : Euler')
     if rotating_frame == False:
         f = 0
         print('Coriolis parameter : ',f)
@@ -119,7 +120,18 @@ if integrator == 'Euler':
         print('Coriolis parameter : ',f)
         u,v,eta = get_SW_euler_R(t,x,y,Ny,u,v,eta,dx,dy,dt,g,H,f,obstacle)
 
+elif integrator == 'LP':
+    print('Integration : Leap-Frog')
+    if rotating_frame == False:
+        f = 0
+        print('Coriolis parameter : ',f)
+        u,v,eta = get_SW_LP_R(t,x,y,Ny,u,v,eta,dx,dy,dt,g,H,f,obstacle)
+    elif rotating_frame == True:
+        print('Coriolis parameter : ',f)
+        u,v,eta = get_SW_LP_R(t,x,y,Ny,u,v,eta,dx,dy,dt,g,H,f,obstacle)
+
 elif integrator == 'LP_m':
+    print('Integration : Leap-Frog/Euler')
     if rotating_frame == False:
         f = 0
         print('Coriolis parameter : ',f)

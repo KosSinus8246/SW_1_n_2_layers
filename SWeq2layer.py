@@ -121,6 +121,7 @@ elif IC == 'bidecent':
 #COMPUTATION
 
 if integrator == 'Euler':
+    print('Integration : Euler')
     if rotating_frame==False:
         f = 0
         print('Coriolis parameter : ',f)
@@ -130,6 +131,11 @@ if integrator == 'Euler':
         u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_R(t,x,y,Ny,u1,v1,eta1,u2,v2,eta2,detadt,dx,dy,dt,g,g2,H1,H2,f,obstacle)
 
 elif integrator == 'LP':
+    print('Integration : Leap-Frog')
+    print('Not yet implemented')
+
+elif integrator == 'LP_m':
+    print('Integration : Leap-Frog/Euler')
     print('Not yet implemented')
 
 ###############################################################
