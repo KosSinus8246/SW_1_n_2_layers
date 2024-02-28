@@ -6,6 +6,7 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from integrator_1_layer import *
 
 #OPTIONAL : PRESENTATION
 
@@ -23,12 +24,15 @@ cmap = 'RdBu_r'
 #f=2e-2 #pour tester coriolis
 #H = 1 #replaced by a matrix for topo
 
+integrator = 'LP_m' #'Euler' or 'LP_m'
+save_netcf = True #choose if you want to save variables in netCDF
+
 ###################################
 #PLOT SELECTION
 
 view_1D = False
 view_2D = False
-view_3D = True
+view_3D = False
 
 view_cour = False #voir les vecteurs sur view_2D
 nb_adim = False #voir les nombres adimensionnels
@@ -52,8 +56,10 @@ Ny = 50
 dx = Lx/Nx
 dy = Ly/Ny
 
-dt = 6
-time = 1500 #max
+#dt = 6 #max euler
+dt = 20 #max LP
+#time = 1500 #max euler
+time = 5000 #max LP
 
 Nt = time/dt
 print('Nombre de cellules temporelles : ',Nt) #ne pas dépasser 250 cellules
@@ -67,12 +73,7 @@ v = np.zeros([len(t),len(x),len(y)])
 eta = np.zeros([len(t),len(x),len(y)])
 
 H = np.ones([len(x),len(y)])
-
 #sloped bottom
-# sH = np.linspace(0,0.5,len(y))
-# topo = H*sH
-# H = H-topo 
-
 
 def gaussian2D(x,y,mx,my):
     from scipy.stats import multivariate_normal
@@ -109,67 +110,23 @@ elif IC == 'bidecent':
 ########################################################
 #COMPUTATION
 
-def get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,obstacle):
-    for k in range(len(t)-1):
-        for l in range(len(x)-1):
-            for j in range(len(y)-1):
-                u[k,0,:] = 0
-                u[k,-1,:] = 0
-                v[k,:,0] = 0
-                v[k,:,-1] = 0
+if integrator == 'Euler':
+    if rotating_frame == False:
+        f = 0
+        print('Coriolis parameter : ',f)
+        u,v,eta = get_SW_euler_R(t,x,y,Ny,u,v,eta,dx,dy,dt,g,H,f,obstacle)
+    elif rotating_frame == True:
+        print('Coriolis parameter : ',f)
+        u,v,eta = get_SW_euler_R(t,x,y,Ny,u,v,eta,dx,dy,dt,g,H,f,obstacle)
 
-                if obstacle == 'detroit':
-                    ####### COTE GAUCHE
-                    u[k,Ny//3+5:Ny//3+15,0:24] = 0
-                    v[k,Ny//3+5:Ny//3+15,0:24] = 0
-
-                    ####### COTE DROITE
-                    u[k,Ny//3+5:Ny//3+15,26:50] = 0
-                    v[k,Ny//3+5:Ny//3+15,26:50] = 0
-                
-                elif obstacle == 'ile':
-                    u[k,Ny//3+5:Ny//3+15,20:30] = 0
-                    v[k,Ny//3+5:Ny//3+15,20:30] = 0
-                    
-    
-                u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx))
-                v[k+1,l,j] = v[k,l,j]-dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy))
-                eta[k+1,l,j] = eta[k,l,j]-dt*(H[l,j]*(u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy))
-
-    return u,v,eta
-
-def get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,obstacle):
-    for k in range(len(t)-1):
-        for l in range(len(x)-1):
-            for j in range(len(y)-1):
-                u[k,0,:] = 0
-                u[k,-1,:] = 0
-                v[k,:,0] = 0
-                v[k,:,-1] = 0
-
-                if obstacle == 'detroit':
-                    ####### COTE GAUCHE
-                    u[k,Ny//3+5:Ny//3+15,0:24] = 0
-                    v[k,Ny//3+5:Ny//3+15,0:24] = 0
-
-                    ####### COTE DROITE
-                    u[k,Ny//3+5:Ny//3+15,26:50] = 0
-                    v[k,Ny//3+5:Ny//3+15,26:50] = 0
-
-                elif obstacle == 'ile':
-                    u[k,Ny//3+5:Ny//3+15,20:30] = 0
-                    v[k,Ny//3+5:Ny//3+15,20:30] = 0
-    
-                u[k+1,l,j] = u[k,l,j]-dt*(g* (eta[k,l+1,j]-eta[k,l-1,j])/(2*dx) + f*v[k,l,j])
-                v[k+1,l,j] = v[k,l,j]-dt*(g* (eta[k,l,j+1]-eta[k,l,j-1])/(2*dy) - f*u[k,l,j])
-                eta[k+1,l,j] = eta[k,l,j]-dt*(H[l,j]*(u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy))        
-    
-    return u,v,eta
-    
-if rotating_frame == False:
-    u,v,eta = get_SW_euler_NR(u,v,eta,dx,dy,dt,g,H,obstacle)
-elif rotating_frame == True:
-    u,v,eta = get_SW_euler_R(u,v,eta,dx,dy,dt,g,H,f,obstacle)
+elif integrator == 'LP_m':
+    if rotating_frame == False:
+        f = 0
+        print('Coriolis parameter : ',f)
+        u,v,eta = get_SW_LP_mixte_R(t,x,y,Ny,Nt,u,v,eta,dx,dy,dt,g,H,f,obstacle)
+    elif rotating_frame == True:
+        print('Coriolis parameter : ',f)
+        u,v,eta = get_SW_LP_mixte_R(t,x,y,Ny,Nt,u,v,eta,dx,dy,dt,g,H,f,obstacle)
   
 ###############################################################
 #PLOT
@@ -233,7 +190,7 @@ if nb_adim == True:
     U=u
     Ro = U/(f*Lx)
     Fr = U/(np.sqrt(g*H))
-    print(Fr)
+    print(Ro)
     fig,(ax) = plt.subplots(1,2,figsize=(15,7))
     for i in range(len(t)):
         fig.suptitle(str(i)+'/'+str(len(t)-1))
@@ -282,7 +239,8 @@ def save_nc(u,v,eta):
         var3 = ncfile.createVariable('v', 'f8', ('time','x', 'y'))
         var3[:] = v      
 
-save_nc(u,v,eta)
+if save_netcf == True:
+    save_nc(u,v,eta)
 
 
 '''

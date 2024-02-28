@@ -6,6 +6,7 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from integrator_2_layers import *
 
 #OPTIONAL : PRESENTATION
 
@@ -18,9 +19,8 @@ mpl.rcParams['font.size'] = 15
 
 omega = 2*np.pi/(24*3600)
 f = 2*omega*np.sin(45)
-#f=1e-2 #pour tester
 g = 9.81
-
+cmap='RdBu_r'
 rho2 = 1020
 rho1 = 1010
 rho0 = 1013
@@ -28,7 +28,10 @@ g2= g*(rho1 - rho2)/rho0 #reduced gravity
 print('Reduced gravity : ',g2)
 #H1=1 #replaced with a matrix for topo
 #H2=1
-cmap='RdBu_r'
+#f=1e-2 #pour tester
+
+integrator = 'Euler' #'Euler' or 'LP'
+save_netcf = True #choose if you want to save variables in netCDF
 
 ###################################
 #PLOT SELECTION
@@ -117,102 +120,17 @@ elif IC == 'bidecent':
 ########################################################
 #COMPUTATION
 
-def get_SW_2layer_euler_NR(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,obstacle):
-    for k in range(len(t)-1):
-        for l in range(len(x)-1):
-            for j in range(len(y)-1):
-                u1[k,0,:]=0
-                u1[k,-1,:]=0
-                v1[k,:,0]=0
-                v1[k,:,-1]=0
+if integrator == 'Euler':
+    if rotating_frame==False:
+        f = 0
+        print('Coriolis parameter : ',f)
+        u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_R(t,x,y,Ny,u1,v1,eta1,u2,v2,eta2,detadt,dx,dy,dt,g,g2,H1,H2,f,obstacle)
+    elif rotating_frame==True:
+        print('Coriolis parameter : ',f)
+        u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_R(t,x,y,Ny,u1,v1,eta1,u2,v2,eta2,detadt,dx,dy,dt,g,g2,H1,H2,f,obstacle)
 
-                u2[k,0,:]=0
-                u2[k,-1,:]=0
-                v2[k,:,0]=0
-                v2[k,:,-1]=0
-
-                if obstacle == 'detroit':
-                    ####### COTE GAUCHE
-                    u1[k,Ny//3+5:Ny//3+15,0:24] = 0
-                    v1[k,Ny//3+5:Ny//3+15,0:24] = 0
-                    u2[k,Ny//3+5:Ny//3+15,0:24] = 0
-                    v2[k,Ny//3+5:Ny//3+15,0:24] = 0
-
-                    ####### COTE DROITE
-                    u1[k,Ny//3+5:Ny//3+15,26:50] = 0
-                    v1[k,Ny//3+5:Ny//3+15,26:50] = 0
-                    u2[k,Ny//3+5:Ny//3+15,26:50] = 0
-                    v2[k,Ny//3+5:Ny//3+15,26:50] = 0
-                elif obstacle == 'ile':
-                    u1[k,Ny//3+5:Ny//3+15,20:30] = 0
-                    v1[k,Ny//3+5:Ny//3+15,20:30] = 0
-                    u2[k,Ny//3+5:Ny//3+15,20:30] = 0
-                    v2[k,Ny//3+5:Ny//3+15,20:30] = 0
-    
-                    
-                #1st layer
-                u1[k+1,l,j]=u1[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx))
-                v1[k+1,l,j]=v1[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j-1])/(2*dy))
-                detadt[k,l,j]=-H2[l,j]*((u2[k,l+1,j] - u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1] - v2[k,l,j-1])/(2*dy))
-                eta1[k+1,l,j]=eta1[k,l,j]-dt*(H1[l,j]*(u1[k,l+1,j]-u1[k,l-1,j])/(2*dx) + (v1[k,l,j+1]-v1[k,l,j-1])/(2*dy)) - detadt[k,l,j]
-                    
-                #2nd layer
-                u2[k+1,l,j]=u2[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx) - g2*(eta2[k,l+1,j]-eta2[k,l-1,j])/(2*dx))
-                v2[k+1,l,j]=v2[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j+1])/(2*dy) - g2*(eta2[k,l,j+1]-eta2[k,l,j+1])/(2*dy))
-                eta2[k+1,l,j]=eta2[k,l,j]-dt*H2[l,j]*((u2[k,l+1,j]-u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1]-v2[k,l,j-1])/(2*dy))
-                        
-    return u1,v1,eta1,u2,v2,eta2
-
-def get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,obstacle):
-    for k in range(len(t)-1):
-        for l in range(len(x)-1):
-            for j in range(len(y)-1):
-                u1[k,0,:]=0
-                u1[k,-1,:]=0
-                v1[k,:,0]=0
-                v1[k,:,-1]=0
-
-                u2[k,0,:]=0
-                u2[k,-1,:]=0
-                v2[k,:,0]=0
-                v2[k,:,-1]=0
-
-                if obstacle == 'detroit':
-                    ####### COTE GAUCHE
-                    u1[k,Ny//3+5:Ny//3+15,0:24] = 0
-                    v1[k,Ny//3+5:Ny//3+15,0:24] = 0
-                    u2[k,Ny//3+5:Ny//3+15,0:24] = 0
-                    v2[k,Ny//3+5:Ny//3+15,0:24] = 0
-
-                    ####### COTE DROITE
-                    u1[k,Ny//3+5:Ny//3+15,26:50] = 0
-                    v1[k,Ny//3+5:Ny//3+15,26:50] = 0
-                    u2[k,Ny//3+5:Ny//3+15,26:50] = 0
-                    v2[k,Ny//3+5:Ny//3+15,26:50] = 0
-                elif obstacle == 'ile':
-                    u1[k,Ny//3+5:Ny//3+15,20:30] = 0
-                    v1[k,Ny//3+5:Ny//3+15,20:30] = 0
-                    u2[k,Ny//3+5:Ny//3+15,20:30] = 0
-                    v2[k,Ny//3+5:Ny//3+15,20:30] = 0
-    
-                
-                #1st layer
-                u1[k+1,l,j]=u1[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx) + f*v1[k,l,j])
-                v1[k+1,l,j]=v1[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j-1])/(2*dy) - f*u1[k,l,j])
-                detadt[k,l,j]=-H2[l,j]*((u2[k,l+1,j] - u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1] - v2[k,l,j-1])/(2*dy))
-                eta1[k+1,l,j]=eta1[k,l,j]-dt*(H1[l,j]*(u1[k,l+1,j]-u1[k,l-1,j])/(2*dx) + (v1[k,l,j+1]-v1[k,l,j-1])/(2*dy)) - detadt[k,l,j]
-                    
-                #2nd layer
-                u2[k+1,l,j]=u2[k,l,j]-dt*(g* (eta1[k,l+1,j]-eta1[k,l-1,j])/(2*dx) - g2*(eta2[k,l+1,j]-eta2[k,l-1,j])/(2*dx)+f*v2[k,l,j])
-                v2[k+1,l,j]=v2[k,l,j]-dt*(g* (eta1[k,l,j+1]-eta1[k,l,j+1])/(2*dy) - g2*(eta2[k,l,j+1]-eta2[k,l,j+1])/(2*dy)-f*u2[k,l,j])
-                eta2[k+1,l,j]=eta2[k,l,j]-dt*H2[l,j]*((u2[k,l+1,j]-u2[k,l-1,j])/(2*dx) + (v2[k,l,j+1]-v2[k,l,j-1])/(2*dy))
-                        
-    return u1,v1,eta1,u2,v2,eta2
-
-if rotating_frame==False:
-    u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_NR(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,obstacle)
-elif rotating_frame==True:
-    u1,v1,eta1,u2,v2,eta2=get_SW_2layer_euler_R(u1,v1,eta1,u2,v2,eta2,dx,dy,dt,g,g2,H1,H2,f,obstacle)
+elif integrator == 'LP':
+    print('Not yet implemented')
 
 ###############################################################
 #PLOT
@@ -333,4 +251,5 @@ def save_nc(u1,v1,u2,v2,eta1,eta2):
         var33 = ncfile.createVariable('v2', 'f8', ('time','x', 'y'))
         var33[:] = v2       
 
-save_nc(u1,v1,u2,v2,eta1,eta2)
+if save_netcf == True:
+    save_nc(u1,v1,u2,v2,eta1,eta2)
