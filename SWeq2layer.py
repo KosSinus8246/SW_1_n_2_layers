@@ -30,15 +30,15 @@ print('Reduced gravity : ',g2)
 #H2=1
 #f=1e-2 #pour tester
 
-integrator = 'LP' #'Euler' or 'LP'
+integrator = 'LP' #'Euler' or 'LP' or 'LP_m'
 save_netcf = True #choose if you want to save variables in netCDF
 
 ###################################
 #PLOT SELECTION
 
-view_1D = True
+view_1D = False
 view_2D = False
-view_3D = False
+view_3D = True
 
 view_cour = False
 
@@ -144,7 +144,11 @@ elif integrator == 'LP':
 
 elif integrator == 'LP_m':
     print('Integration : Leap-Frog/Euler')
-    print('Not yet implemented')
+    if rotating_frame == False:
+        f = 0
+        u1,v1,eta1,u2,v2,eta2 = get_SW_2layers_LP_mixte_R(t,x,y,Ny,Nt,u1,v1,eta1,u2,v2,eta2,detadt,dx,dy,dt,g,g2,H1,H2,f,obstacle)
+    elif rotating_frame == True:
+        u1,v1,eta1,u2,v2,eta2 = get_SW_2layers_LP_mixte_R(t,x,y,Ny,Nt,u1,v1,eta1,u2,v2,eta2,detadt,dx,dy,dt,g,g2,H1,H2,f,obstacle)
 
 ###############################################################
 #PLOT

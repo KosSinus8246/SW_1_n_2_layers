@@ -90,7 +90,7 @@ def get_SW_LP_R(t,x,y,Ny,u,v,eta,dx,dy,dt,g,H,f,obstacle):
 def get_SW_LP_mixte_R(t,x,y,Ny,Nt,u,v,eta,dx,dy,dt,g,H,f,obstacle):
     tspawn = 2
     tmixt = Nt//2
-    dmixt = 20
+    dmixt = 50 #20
     for k in range(len(t)-1):
         for l in range(len(x)-1):
             for j in range(len(y)-1):
@@ -139,7 +139,3 @@ def get_SW_LP_mixte_R(t,x,y,Ny,Nt,u,v,eta,dx,dy,dt,g,H,f,obstacle):
                     eta[k+1,l,j] = eta[k-1,l,j]-2*dt*(H[l,j]*((u[k,l+1,j]-u[k,l-1,j])/(2*dx) + (v[k,l,j+1]-v[k,l,j-1])/(2*dy)))
                 
     return u,v,eta
-
-
-
-

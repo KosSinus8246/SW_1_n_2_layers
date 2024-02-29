@@ -24,7 +24,7 @@ cmap = 'RdBu_r'
 #f=2e-2 #pour tester coriolis
 #H = 1 #replaced by a matrix for topo
 
-integrator = 'LP_m' #'Euler' or 'LP_m'
+integrator = 'LP' #'Euler' or 'LP' or 'LP_m'
 save_netcf = True #choose if you want to save variables in netCDF
 
 ###################################
@@ -35,13 +35,13 @@ view_2D = False
 view_3D = False
 
 view_cour = False #voir les vecteurs sur view_2D
-nb_adim = False #voir les nombres adimensionnels
+nb_adim = True #voir les nombres adimensionnels
 
 ##################################
 #CHOICE OF PERTURBATION
 
-IC = 'decent' #'decent', 'bidecent', 'cent','eta_detroit'
-obstacle = 'none' # 'detroit', 'ile'
+IC = 'eta_detroit' #'decent', 'bidecent', 'cent','eta_detroit'
+obstacle = 'ile' # 'detroit', 'ile'
 rotating_frame = True
 
 ###############################
@@ -51,8 +51,9 @@ rotating_frame = True
 Lx = 5*1e3
 Ly = 5*1e3
 
-Nx = 50
+Nx = 50 
 Ny = 50
+
 dx = Lx/Nx
 dy = Ly/Ny
 
@@ -183,7 +184,7 @@ if view_3D == True:
 
         fig.suptitle(str(i)+'/'+str(len(t)-1))
         fig3=ax.plot_surface(xx,yy,eta[i,:,:]+H,cmap=cmap)
-        ax.set_zlim(np.min(eta),np.max(eta))
+        ax.set_zlim(np.min(eta),np.max(eta)+np.max(H))
 
         ax.set_xlabel('$x$')
         ax.set_ylabel('$y$')
@@ -192,30 +193,55 @@ if view_3D == True:
 
         plt.pause(0.01)
         ax.clear()
-    fig3=ax.plot_surface(xx,yy,eta[-1,:,:]+H,cmap=cmap)
+    fig3=ax.plot_surface(xx,yy,eta[-1,:,:]+np.max(H),cmap=cmap)
     ax.set_xlabel('$x$')
     ax.set_ylabel('$y$')
     ax.set_zlabel('$H$')
-    ax.set_zlim(np.min(eta),np.max(eta))
+    ax.set_zlim(np.min(eta),np.max(eta)+np.max(H))
 
 if nb_adim == True:
-    U=u
+    U = np.sqrt(u**2 + v**2)
     Ro = U/(f*Lx)
     Fr = U/(np.sqrt(g*H))
-    print(Ro)
-    fig,(ax) = plt.subplots(1,2,figsize=(15,7))
+
+    fig,(ax) = plt.subplots(2,2,figsize=(15,8))
     for i in range(len(t)):
         fig.suptitle(str(i)+'/'+str(len(t)-1))
 
-        fig1=ax[0].pcolormesh(x,y,Ro[i,:,:],cmap=cmap,vmin=np.min(Ro),vmax=np.max(Ro))
-        fig2=ax[1].pcolormesh(x,y,Fr[i,:,:],cmap=cmap,vmin=np.min(Fr),vmax=np.max(Fr))
+        fig1=ax[0,0].pcolormesh(x,y,Ro[i,:,:],cmap=cmap,vmin=np.min(Ro),vmax=np.max(Ro))
+        fig2=ax[0,1].pcolormesh(x,y,Fr[i,:,:],cmap=cmap,vmin=np.min(Fr),vmax=np.max(Fr))
 
-        ax[0].set_title(r'$R_o = \frac{u}{f.L}$')
-        ax[1].set_title(r'$F_r = \frac{u}{\sqrt{g.H}}$')
+        ax[0,0].set_title(r'$R_o = \frac{u}{f.L}$')
+        ax[0,1].set_title(r'$F_r = \frac{u}{\sqrt{g.H}}$')
+
+        ax[1,0].plot(t[i],np.mean(Ro[i,:,:]),'.')
+        ax[1,1].plot(t[i],np.mean(Fr[i,:,:]),'.')
+
+        ax[0,0].set_xlabel(r'$x$')
+        ax[0,0].set_ylabel(r'$y$')
+        ax[0,1].set_xlabel(r'$x$')
+        ax[0,1].set_ylabel(r'$y$')
+
+        ax[1,0].set_xlabel(r'$t$')
+        ax[1,0].set_ylabel(r'$\overline{R_o}$')
+        ax[1,1].set_xlabel(r'$t$')
+        ax[1,1].set_ylabel(r'$\overline{F_r}$')
+
+        ax[1,0].grid(True)
+        ax[1,1].grid(True)
 
         plt.pause(0.01)
-        ax[0].clear()
-        ax[1].clear()
+        ax[0,0].clear()
+        ax[0,1].clear()
+    ax[0,0].set_title(r'$R_o = \frac{u}{f.L}$')
+    ax[0,1].set_title(r'$F_r = \frac{u}{\sqrt{g.H}}$')
+    ax[0,0].pcolormesh(x,y,Ro[-1,:,:],cmap=cmap,vmin=np.min(Ro),vmax=np.max(Ro))
+    ax[0,1].pcolormesh(x,y,Fr[-1,:,:],cmap=cmap,vmin=np.min(Fr),vmax=np.max(Fr))
+    ax[0,0].set_xlabel(r'$x$')
+    ax[0,0].set_ylabel(r'$y$')
+    ax[0,1].set_xlabel(r'$x$')
+    ax[0,1].set_ylabel(r'$y$')
+
 
 
 if view_cour == True:
