@@ -1,3 +1,0 @@
-@uthor : dimitri moreau
-
-All these codes should be revised ; i'll have a look on it later ...
