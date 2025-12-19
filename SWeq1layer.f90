@@ -48,6 +48,8 @@ program SW1L
 
 	allocate(u(Nt, Nx, Ny), v(Nt, Nx, Ny), eta(Nt, Nx, Ny), H(Nx, Ny), pertur(Nx, Ny))
 
+	H(:,:) = 1
+
 	! initial perturbation
 	call gaussian2D(x, y, eta, pi, Nx, Ny, pertur)
 	eta(1,:,:) = pertur
@@ -58,18 +60,22 @@ program SW1L
 	if (rotating_frame .eqv. .false.) then
 		f = 0.
 		print *, 'no coriolis'
-		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle, tspawn)
+		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle)
 	elseif (rotating_frame .eqv. .true.) then
 		print *, 'coriolis'
 		f = 2*omega*sin(45.)
 		print *, f
-		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle, tspawn)
+		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle)
 
 	end if
 
 
 	print *, '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 	print *, 'OK'
+
+	do i=1,Nt
+		write(*,*) maxval(eta(i,:,:))
+	end do
 
 
 contains
@@ -118,18 +124,20 @@ contains
 
 
 
-	subroutine integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle, tspawn)
-		
-		!integer :: i, j, k
+	subroutine integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle)
 
-		integer, intent(in) :: Nt, Nx, Ny, tspawn
+		integer :: tspawn
+
+		integer, intent(in) :: Nt, Nx, Ny
 		real(8), intent(in) :: dx, dy, dt, g, f
 		
 		real(8), intent(out) :: u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
 		
 		character(50), intent(in) :: obstacle
 
-		do i=2,Nt-1
+		tspawn = 3
+
+		do i=1,Nt-1
 			do j=2,Nx-1
 				do k=2,Ny-1
 					u(i,1,:) = 0.
