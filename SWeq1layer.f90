@@ -7,7 +7,7 @@ program SW1L
 	character(50) :: IC, obstacle
 	logical :: rotating_frame 
 
-	real(8), allocatable :: x(:), y(:), t(:), u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
+	real(8), allocatable :: x(:), y(:), t(:), u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:), pertur(:,:)
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
@@ -18,7 +18,7 @@ program SW1L
 
 	IC = 'eta_detroit'
 	obstacle = 'ile'
-	rotating_frame = .false.
+	rotating_frame = .true.
 
 
 	Lx = 5*1e3
@@ -46,7 +46,13 @@ program SW1L
                 y(k+1) = y(k) + dy
         end do
 
-	allocate(u(Nt, Nx, Ny), v(Nt, Nx, Ny), eta(Nt, Nx, Ny), H(Nx, Ny))
+	allocate(u(Nt, Nx, Ny), v(Nt, Nx, Ny), eta(Nt, Nx, Ny), H(Nx, Ny), pertur(Nx, Ny))
+
+	! initial perturbation
+	call gaussian2D(x, y, eta, pi, Nx, Ny, pertur)
+	eta(1,:,:) = pertur
+
+
 
 
 	if (rotating_frame .eqv. .false.) then
@@ -54,8 +60,9 @@ program SW1L
 		print *, 'no coriolis'
 		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle, tspawn)
 	elseif (rotating_frame .eqv. .true.) then
-		print *, 'bz ta mer'
+		print *, 'coriolis'
 		f = 2*omega*sin(45.)
+		print *, f
 		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle, tspawn)
 
 	end if
@@ -66,6 +73,50 @@ program SW1L
 
 
 contains
+
+	subroutine gaussian2D(x, y, eta, pi, Nx, Ny, pertur)
+
+		integer :: j, k
+		real(8), allocatable :: xx(:,:), yy(:,:)		
+		real(8) :: sx, sy, mx, my, xbar, ybar, Vx, Vy
+		
+		integer, intent(in) :: Nx, Ny
+		real(8), intent(in) :: x(:), y(:), eta(:,:,:), pi
+
+		real(8), allocatable, intent(out) :: pertur(:,:)
+
+
+		! meshgrid
+		allocate(xx(Nx,Ny), yy(Nx,Ny), pertur(Nx,Ny))
+
+		do j=1,Nx-1
+			xx(j,:) = x(j)
+		end do
+		do k=1,Ny-1
+			yy(:,k) = y(k)
+		end do
+
+
+		! variances
+
+		xbar = (1/Nx)*sum(x)
+		ybar = (1/Ny)*sum(y)
+		
+		Vx = (1/Nx)*sum(x - xbar)**2
+		Vy = (1/Ny)*sum(y - ybar)**2
+
+		!std
+		sx = 0.25*(Vx)**(1/2)
+		sy = 0.25*(Vy)**(1/2)
+
+		! pas le droit en f90 de rentrer une valeur puis de la modifier comme ça
+		! stocker dans un tampon
+		pertur(:,:) = eta(1,:,:) + (1/(2*pi*sx*sy))*exp(-0.5*(( (xx-mx)/sx )**2 + ((yy-my)/sy)**2 ))
+
+	end subroutine
+
+
+
 
 	subroutine integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle, tspawn)
 		
@@ -101,7 +152,6 @@ contains
 					end if
 
 					!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-					!SCHEMA MIXTE : 1) Euler ; 2) LP ; 3) Euler ; 4) LP.
 					
 					if (t(i) <= tspawn) then
 						!print('Euler init')
