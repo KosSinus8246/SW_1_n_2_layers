@@ -17,12 +17,12 @@ program SW1L
 	tspawn = 2
 
 	IC = 'eta_detroit'
-	obstacle = 'ile'
+	obstacle = ''
 	rotating_frame = .true.
 
 
-	Lx = 5*1e3
-	Ly = 5*1e3
+	Lx = 5000
+	Ly = 5000
 
 	Nx = 50
 	Ny = 50
@@ -35,6 +35,10 @@ program SW1L
 	Nt = time/dt
 
 	allocate(t(Nt), x(Nx), y(Ny))
+
+	t(:) = 0
+	x(:) = 0
+	y(:) = 0
 
 	do i=1,Nt-1
 		t(i+1) = t(i) + dt
@@ -52,8 +56,9 @@ program SW1L
 
 	! initial perturbation
 	call gaussian2D(x, y, eta, pi, Nx, Ny, pertur)
-	eta(1,:,:) = pertur
+	eta(1,:,:) = pertur*1e6
 
+	!eta(1,1,:) = 1
 
 
 
@@ -69,13 +74,12 @@ program SW1L
 
 	end if
 
+	!do i=1,Nt
+	!	write(*,*) maxval(eta(i,:,:)), maxval(u(i,:,:)), maxval(v(i,:,:))
+	!end do
 
-	print *, '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-	print *, 'OK'
 
-	do i=1,Nt
-		write(*,*) maxval(eta(i,:,:))
-	end do
+	print *, eta
 
 
 contains
@@ -84,40 +88,37 @@ contains
 
 		integer :: j, k
 		real(8), allocatable :: xx(:,:), yy(:,:)		
-		real(8) :: sx, sy, mx, my, xbar, ybar, Vx, Vy
+		real(8) :: sx, sy, xbar, ybar, Vx, Vy
 		
 		integer, intent(in) :: Nx, Ny
-		real(8), intent(in) :: x(:), y(:), eta(:,:,:), pi
+		real(8), intent(inout) :: x(:), y(:), eta(:,:,:), pi
 
 		real(8), allocatable, intent(out) :: pertur(:,:)
 
 
 		! meshgrid
-		allocate(xx(Nx,Ny), yy(Nx,Ny), pertur(Nx,Ny))
-
-		do j=1,Nx-1
-			xx(j,:) = x(j)
-		end do
-		do k=1,Ny-1
-			yy(:,k) = y(k)
-		end do
-
+		allocate(pertur(Nx,Ny))
 
 		! variances
 
-		xbar = (1/Nx)*sum(x)
-		ybar = (1/Ny)*sum(y)
-		
-		Vx = (1/Nx)*sum(x - xbar)**2
-		Vy = (1/Ny)*sum(y - ybar)**2
+		xbar = sum(x)/Nx
+		ybar = sum(y)/Ny
+
+		Vx = sum((x - xbar)**2)/Nx
+		Vy = sum((y - ybar)**2)/Ny
 
 		!std
-		sx = 0.25*(Vx)**(1/2)
-		sy = 0.25*(Vy)**(1/2)
+		sx = 0.25*(Vx**(0.5))
+		sy = 0.25*(Vy**(0.5))
 
 		! pas le droit en f90 de rentrer une valeur puis de la modifier comme ça
 		! stocker dans un tampon
-		pertur(:,:) = eta(1,:,:) + (1/(2*pi*sx*sy))*exp(-0.5*(( (xx-mx)/sx )**2 + ((yy-my)/sy)**2 ))
+		
+		do j=1,Nx
+			do k=1,Ny
+				pertur(j,k) = eta(1,j,k) + (1/(2*pi*sx*sy))*exp(-0.5*(( (x(j)-xbar)/sx )**2 + ((y(k)-ybar)/sy)**2 ))
+			end do
+		end do
 
 	end subroutine
 
@@ -126,12 +127,12 @@ contains
 
 	subroutine integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle)
 
-		integer :: tspawn
+		integer :: tspawn, i, j, k
 
 		integer, intent(in) :: Nt, Nx, Ny
 		real(8), intent(in) :: dx, dy, dt, g, f
 		
-		real(8), intent(out) :: u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
+		real(8), intent(inout) :: u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
 		
 		character(50), intent(in) :: obstacle
 
