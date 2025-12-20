@@ -16,7 +16,7 @@ program SW1L
 	g = 9.81
 	tspawn = 2
 
-	IC = 'eta_center'
+	IC = 'corner' ! choose : 'center', 'corner'
 	rotating_frame = .true.
 
 
@@ -55,12 +55,8 @@ program SW1L
 
 	! initial perturbation
 
-	if (IC == 'eta_center') then
-		call gaussian2D(x, y, eta, pi, Nx, Ny, pertur)
-		eta(1,:,:) = pertur*1e6
-	else
-		print *, 'NO'
-	end if
+	call gaussian2D(x, y, eta, pi, Nx, Ny, pertur, IC)
+	eta(1,:,:) = pertur*1e6
 
 
 	
@@ -82,13 +78,14 @@ program SW1L
 
 contains
 
-	subroutine gaussian2D(x, y, eta, pi, Nx, Ny, pertur)
+	subroutine gaussian2D(x, y, eta, pi, Nx, Ny, pertur, IC)
 
 		integer :: j, k
 		real(8), allocatable :: xx(:,:), yy(:,:)		
 		real(8) :: sx, sy, xbar, ybar, Vx, Vy
 		
 		integer, intent(in) :: Nx, Ny
+		character(50), intent(in) :: IC
 		real(8), intent(inout) :: x(:), y(:), eta(:,:,:), pi
 
 		real(8), allocatable, intent(out) :: pertur(:,:)
@@ -99,8 +96,15 @@ contains
 
 		! variances
 
-		xbar = sum(x)/Nx
-		ybar = sum(y)/Ny
+		if (IC == 'center') then
+			xbar = sum(x)/(Nx)
+			ybar = sum(y)/(Ny)
+		elseif (IC == 'corner') then
+			xbar = sum(x)/(Nx/2)    
+                        ybar = sum(y)/(Ny/2)
+		end if
+
+
 
 		Vx = sum((x - xbar)**2)/Nx
 		Vy = sum((y - ybar)**2)/Ny
@@ -114,9 +118,11 @@ contains
 		
 		do j=1,Nx
 			do k=1,Ny
+				!pertur(j,k) = eta(1,j,k) + (1/(2*pi*sx*sy))*exp(-0.5*(( (x(j)-xbar)/sx )**2 + ((y(k)-ybar)/sy)**2 ))
 				pertur(j,k) = eta(1,j,k) + (1/(2*pi*sx*sy))*exp(-0.5*(( (x(j)-xbar)/sx )**2 + ((y(k)-ybar)/sy)**2 ))
 			end do
 		end do
+
 
 	end subroutine
 
@@ -155,21 +161,32 @@ contains
 				end do
 			end do
 
+			! BC's : rigid wall
+
 			u(i,1,:) = 0.
 			u(i,Nx,:) = 0.
 			v(i,:,1) = 0.
 			v(i,:,Ny) = 0.
 
-			u(i+1,1,:)  = 0
-			u(i+1,Nx,:) = 0
-			v(i+1,:,1)  = 0
-			v(i+1,:,Ny) = 0
+			u(i+1,1,:)  = 0.
+			u(i+1,Nx,:) = 0.
+			v(i+1,:,1)  = 0.
+			v(i+1,:,Ny) = 0.
 
 			! simple neuman
 			eta(i+1,1,:)  = eta(i+1,2,:)
 			eta(i+1,Nx,:) = eta(i+1,Nx-1,:)
 			eta(i+1,:,1)  = eta(i+1,:,2)
 			eta(i+1,:,Ny) = eta(i+1,:,Ny-1)
+
+
+			! island
+			u(i,Ny/3+5:Ny/3+15,20:30) = 0.
+			v(i,Ny/3+5:Ny/3+15,20:30) = 0.
+
+			u(i+1,Ny/3+5:Ny/3+15,20:30) = 0
+			v(i+1,Ny/3+5:Ny/3+15,20:30) = 0
+
 
 
 		end do
