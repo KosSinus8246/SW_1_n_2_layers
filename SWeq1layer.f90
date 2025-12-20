@@ -4,7 +4,7 @@ program SW1L
 	real(8) :: pi, omega, g, Lx, Ly, dx, dy, dt, time, f
 	integer :: i, j, k, Nx, Ny, Nt, tspawn
 
-	character(50) :: IC, obstacle
+	character(50) :: IC
 	logical :: rotating_frame 
 
 	real(8), allocatable :: x(:), y(:), t(:), u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:), pertur(:,:)
@@ -16,8 +16,7 @@ program SW1L
 	g = 9.81
 	tspawn = 2
 
-	IC = 'eta_detroit'
-	obstacle = ''
+	IC = 'eta_center'
 	rotating_frame = .true.
 
 
@@ -55,28 +54,27 @@ program SW1L
 	H(:,:) = 1
 
 	! initial perturbation
-	call gaussian2D(x, y, eta, pi, Nx, Ny, pertur)
-	eta(1,:,:) = pertur*1e6
 
-	!eta(1,1,:) = 1
+	if (IC == 'eta_center') then
+		call gaussian2D(x, y, eta, pi, Nx, Ny, pertur)
+		eta(1,:,:) = pertur*1e6
+	else
+		print *, 'NO'
+	end if
 
 
-
+	
 	if (rotating_frame .eqv. .false.) then
 		f = 0.
 		print *, 'no coriolis'
-		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle)
+		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f)
 	elseif (rotating_frame .eqv. .true.) then
 		print *, 'coriolis'
 		f = 2*omega*sin(45.)
 		print *, f
-		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle)
+		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f)
 
 	end if
-
-	!do i=1,Nt
-	!	write(*,*) maxval(eta(i,:,:)), maxval(u(i,:,:)), maxval(v(i,:,:))
-	!end do
 
 
 	print *, eta
@@ -125,7 +123,7 @@ contains
 
 
 
-	subroutine integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, obstacle)
+	subroutine integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f)
 
 		integer :: tspawn, i, j, k
 
@@ -133,34 +131,12 @@ contains
 		real(8), intent(in) :: dx, dy, dt, g, f
 		
 		real(8), intent(inout) :: u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
-		
-		character(50), intent(in) :: obstacle
 
 		tspawn = 3
 
 		do i=1,Nt-1
 			do j=2,Nx-1
 				do k=2,Ny-1
-					u(i,1,:) = 0.
-					u(i,Nx,:) = 0.
-					v(i,:,1) = 0.
-					v(i,:,Ny) = 0.
-		
-					if (obstacle == 'detroit') then
-						! COTE GAUCHE
-						u(i,Ny/3+5:Ny/3+15,1:24) = 0.
-						v(i,Ny/3+5:Ny/3+15,1:24) = 0.
-
-						! COTE DROITE
-						u(i,Ny/3+5:Ny/3+15,26:50) = 0.
-						v(i,Ny/3+5:Ny/3+15,26:50) = 0.
-
-					elseif (obstacle == 'ile') then
-						u(i,Ny/3+5:Ny/3+15,20:30) = 0.
-						v(i,Ny/3+5:Ny/3+15,20:30) = 0.
-					end if
-
-					!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 					
 					if (t(i) <= tspawn) then
 						!print('Euler init')
@@ -178,6 +154,24 @@ contains
 
 				end do
 			end do
+
+			u(i,1,:) = 0.
+			u(i,Nx,:) = 0.
+			v(i,:,1) = 0.
+			v(i,:,Ny) = 0.
+
+			u(i+1,1,:)  = 0
+			u(i+1,Nx,:) = 0
+			v(i+1,:,1)  = 0
+			v(i+1,:,Ny) = 0
+
+			! simple neuman
+			eta(i+1,1,:)  = eta(i+1,2,:)
+			eta(i+1,Nx,:) = eta(i+1,Nx-1,:)
+			eta(i+1,:,1)  = eta(i+1,:,2)
+			eta(i+1,:,Ny) = eta(i+1,:,Ny-1)
+
+
 		end do
 	
 	end subroutine
