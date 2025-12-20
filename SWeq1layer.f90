@@ -16,7 +16,7 @@ program SW1L
 	g = 9.81
 	tspawn = 2
 
-	IC = 'corner' ! choose : 'center', 'corner'
+	IC = 'detroit' ! choose : 'center', 'island', 'detroit'
 	rotating_frame = .true.
 
 
@@ -63,12 +63,12 @@ program SW1L
 	if (rotating_frame .eqv. .false.) then
 		f = 0.
 		print *, 'no coriolis'
-		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f)
+		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
 	elseif (rotating_frame .eqv. .true.) then
 		print *, 'coriolis'
 		f = 2*omega*sin(45.)
 		print *, f
-		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f)
+		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
 
 	end if
 
@@ -99,9 +99,12 @@ contains
 		if (IC == 'center') then
 			xbar = sum(x)/(Nx)
 			ybar = sum(y)/(Ny)
-		elseif (IC == 'corner') then
+		elseif (IC == 'island') then
 			xbar = sum(x)/(Nx/2)    
                         ybar = sum(y)/(Ny/2)
+		elseif (IC == 'detroit') then
+			xbar = sum(x)/(Nx/2)
+			ybar = sum(y)/Ny
 		end if
 
 
@@ -129,12 +132,13 @@ contains
 
 
 
-	subroutine integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f)
+	subroutine integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
 
 		integer :: tspawn, i, j, k
 
 		integer, intent(in) :: Nt, Nx, Ny
 		real(8), intent(in) :: dx, dy, dt, g, f
+		character(50), intent(in) :: IC
 		
 		real(8), intent(inout) :: u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
 
@@ -180,13 +184,29 @@ contains
 			eta(i+1,:,Ny) = eta(i+1,:,Ny-1)
 
 
-			! island
-			u(i,Ny/3+5:Ny/3+15,20:30) = 0.
-			v(i,Ny/3+5:Ny/3+15,20:30) = 0.
+			if (IC == 'island') then
+				! island
+				u(i,Ny/3+5:Ny/3+15,20:30) = 0.
+				v(i,Ny/3+5:Ny/3+15,20:30) = 0.
 
-			u(i+1,Ny/3+5:Ny/3+15,20:30) = 0
-			v(i+1,Ny/3+5:Ny/3+15,20:30) = 0
+				u(i+1,Ny/3+5:Ny/3+15,20:30) = 0
+				v(i+1,Ny/3+5:Ny/3+15,20:30) = 0
+			elseif (IC == 'detroit') then
+				! COTE GAUCHE
+				u(i,Ny/3+5:Ny/3+15,1:24) = 0
+				v(i,Ny/3+5:Ny/3+15,1:24) = 0
 
+				u(i+1,Ny/3+5:Ny/3+15,1:24) = 0
+                                v(i+1,Ny/3+5:Ny/3+15,1:24) = 0
+
+				! COTE DROITE
+				u(i,Ny/3+5:Ny/3+15,26:50) = 0
+				v(i,Ny/3+5:Ny/3+15,26:50) = 0
+
+				u(i+1,Ny/3+5:Ny/3+15,26:50) = 0
+                                v(i+1,Ny/3+5:Ny/3+15,26:50) = 0
+
+			end if
 
 
 		end do
