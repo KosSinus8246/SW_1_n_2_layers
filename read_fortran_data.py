@@ -25,7 +25,7 @@ xx, yy = np.meshgrid(x,y)
 
 fig, ax = plt.subplots(1,1,figsize=(10,7),subplot_kw={"projection": "3d"})
 
-norm = mpl.colors.Normalize(vmin=-0.1, vmax=0.1)
+norm = mpl.colors.Normalize(vmin=-0.15, vmax=0.15)
 cmap = plt.get_cmap("RdBu_r")
 
 mappable = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)

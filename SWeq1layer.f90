@@ -16,7 +16,7 @@ program SW1L
 	g = 9.81
 	tspawn = 2
 
-	IC = 'center' ! choose : 'center', 'island', 'detroit'
+	IC = 'detroit' ! choose : 'center', 'island', 'detroit'
 	rotating_frame = .true.
 	scheme = 'LP' ! chosse : 'EF', 'LP', 'LPEF'
 
@@ -58,7 +58,7 @@ program SW1L
 	! initial perturbation
 
 	call gaussian2D(x, y, eta, pi, Nx, Ny, pertur, IC)
-	eta(1,:,:) = pertur*2.5*1e5
+	eta(1,:,:) = pertur*5*1e5
 	
 	!u(1,:10,:) = 0.25
 
@@ -119,10 +119,10 @@ contains
 			xbar = sum(x)/(Nx)
 			ybar = sum(y)/(Ny)
 		elseif (IC == 'island') then
-			xbar = sum(x)/(Nx/2)    
-                        ybar = sum(y)/(Ny/2)
+			xbar = sum(x)/(Nx/1.8)    
+                        ybar = sum(y)/(Ny/1.8)
 		elseif (IC == 'detroit') then
-			xbar = sum(x)/(Nx/2)
+			xbar = sum(x)/(Nx/2.2)
 			ybar = sum(y)/Ny
 		end if
 
