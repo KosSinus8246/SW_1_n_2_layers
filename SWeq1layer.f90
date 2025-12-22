@@ -4,7 +4,7 @@ program SW1L
 	real(8) :: pi, omega, g, Lx, Ly, dx, dy, dt, time, f
 	integer :: i, j, k, Nx, Ny, Nt, tspawn
 
-	character(50) :: IC
+	character(50) :: IC, scheme
 	logical :: rotating_frame 
 
 	real(8), allocatable :: x(:), y(:), t(:), u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:), pertur(:,:)
@@ -16,8 +16,9 @@ program SW1L
 	g = 9.81
 	tspawn = 2
 
-	IC = 'detroit' ! choose : 'center', 'island', 'detroit'
+	IC = 'center' ! choose : 'center', 'island', 'detroit'
 	rotating_frame = .true.
+	scheme = 'LPEF' ! chosse : 'EF', 'LP', 'LPEF'
 
 
 	Lx = 5000
@@ -63,13 +64,29 @@ program SW1L
 	if (rotating_frame .eqv. .false.) then
 		f = 0.
 		print *, 'no coriolis'
-		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
+		
+		if (scheme == 'EF') then
+			call integrator_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
+		elseif (scheme == 'LP') then
+			call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
+		elseif (scheme == 'LPEF') then		
+			call integrator_LP_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
+		endif
+
+
 	elseif (rotating_frame .eqv. .true.) then
 		print *, 'coriolis'
 		f = 2*omega*sin(45.)
 		print *, f
-		call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
+		
+		if (scheme == 'EF') then
+                        call integrator_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
+                elseif (scheme == 'LP') then
+                        call integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
+		elseif (scheme == 'LPEF') then
+			call integrator_LP_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
 
+                endif
 	end if
 
 
@@ -130,6 +147,83 @@ contains
 	end subroutine
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! EULER
+
+	subroutine integrator_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
+
+		integer :: i, j, k
+
+                integer, intent(in) :: Nt, Nx, Ny
+                real(8), intent(in) :: dx, dy, dt, g, f
+                character(50), intent(in) :: IC
+
+                real(8), intent(inout) :: u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
+
+                do i=1,Nt-1
+                        do j=2,Nx-1
+                                do k=2,Ny-1
+
+                                        print *,'Euler'
+					u(i+1,j,k) = u(i,j,k)-dt*(g* (eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
+					v(i+1,j,k) = v(i,j,k)-dt*(g* (eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
+					eta(i+1,j,k) = eta(i,j,k)-dt*(H(j,k)*((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
+
+				end do
+                        end do
+
+                        ! BC's : rigid wall
+
+                        u(i,1,:) = 0.
+                        u(i,Nx,:) = 0.
+                        v(i,:,1) = 0.
+                        v(i,:,Ny) = 0.
+			
+			u(i+1,1,:)  = 0.
+                        u(i+1,Nx,:) = 0.
+                        v(i+1,:,1)  = 0.
+                        v(i+1,:,Ny) = 0.
+
+                        ! simple neuman
+                        eta(i+1,1,:)  = eta(i+1,2,:)
+                        eta(i+1,Nx,:) = eta(i+1,Nx-1,:)
+                        eta(i+1,:,1)  = eta(i+1,:,2)
+                        eta(i+1,:,Ny) = eta(i+1,:,Ny-1)
+
+
+                        if (IC == 'island') then
+                                ! island
+                                u(i,Ny/3+5:Ny/3+15,20:30) = 0.
+                                v(i,Ny/3+5:Ny/3+15,20:30) = 0.
+
+                                u(i+1,Ny/3+5:Ny/3+15,20:30) = 0
+                                v(i+1,Ny/3+5:Ny/3+15,20:30) = 0
+                        elseif (IC == 'detroit') then
+                                ! COTE GAUCHE
+                                u(i,Ny/3+5:Ny/3+15,1:24) = 0
+                                v(i,Ny/3+5:Ny/3+15,1:24) = 0
+
+                                u(i+1,Ny/3+5:Ny/3+15,1:24) = 0
+                                v(i+1,Ny/3+5:Ny/3+15,1:24) = 0
+
+                                ! COTE DROITE
+                                u(i,Ny/3+5:Ny/3+15,26:50) = 0
+                                v(i,Ny/3+5:Ny/3+15,26:50) = 0
+
+                                u(i+1,Ny/3+5:Ny/3+15,26:50) = 0
+                                v(i+1,Ny/3+5:Ny/3+15,26:50) = 0
+
+                        end if
+
+
+                end do
+
+	end subroutine
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! LEAP-FROG
+
 
 
 	subroutine integrator_LP(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
@@ -144,26 +238,29 @@ contains
 
 		tspawn = 3
 
-		do i=1,Nt-1
-			do j=2,Nx-1
-				do k=2,Ny-1
-					
-					if (t(i) <= tspawn) then
-						!print('Euler init')
+		do i=1,Nt-1					
+			if (i <= tspawn) then
+				do j=2,Nx-1
+				print *, 'Euler init'
+					do k=2,Ny-1
 						u(i+1,j,k) = u(i,j,k)-dt*(g* (eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
 						v(i+1,j,k) = v(i,j,k)-dt*(g* (eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
 						eta(i+1,j,k) = eta(i,j,k)-dt*(H(j,k)*((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
+					end do
+				end do
 
-					elseif (t(i) > tspawn) then 
-						!print('Leap-Frog')
+			else 
+				do j=2,Nx-1
+					print *, 'Leap-Frog'
+					do k=2,Ny-1
 						u(i+1,j,k) = u(i-1,j,k)-2*dt*(g* (eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
 						v(i+1,j,k) = v(i-1,j,k)-2*dt*(g* (eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
 						eta(i+1,j,k) = eta(i-1,j,k)-2*dt*(H(j,k)*((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
-					end if
-
-
+					end do
 				end do
-			end do
+
+			end if
+
 
 			! BC's : rigid wall
 
@@ -212,6 +309,146 @@ contains
 		end do
 	
 	end subroutine
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! MIXTE : LEAP-FROG EULER
+
+
+
+
+subroutine integrator_LP_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
+
+                integer :: tspawn, i, j, k
+		integer :: ct, inter, r    ! integers for the mix scheme
+
+
+                integer, intent(in) :: Nt, Nx, Ny
+                real(8), intent(in) :: dx, dy, dt, g, f
+                character(50), intent(in) :: IC
+
+                real(8), intent(inout) :: u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
+
+                tspawn = 3
+		inter = 50
+		ct = 1
+		r = 0
+
+
+
+                do i=1,Nt-1
+                        
+                        if (t(i) <= tspawn) then
+				do j=2,Nx-1
+					!print *, 'Euler init'
+					do k=2,Ny-1
+						u(i+1,j,k) = u(i,j,k)-dt*(g* &
+							(eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
+						v(i+1,j,k) = v(i,j,k)-dt*(g* &
+							(eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
+						eta(i+1,j,k) = eta(i,j,k)-dt*(H(j,k)* &
+							((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
+
+					end do
+				end do
+
+                        else
+				if (i==inter*ct) then
+					do while (r < 3)
+						do j=2,Nx-1
+							!print *, 'Euler'
+							do k=2,Ny-1
+
+								u(i+1,j,k) = u(i,j,k)-dt*(g* &
+									(eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
+								v(i+1,j,k) = v(i,j,k)-dt*(g* &
+									(eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
+								eta(i+1,j,k) = eta(i,j,k)-dt*(H(j,k)* &
+									((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
+							end do
+						end do
+
+						r = r+1
+
+
+					end do
+
+					ct = ct + 1
+					r = 0
+
+				else
+
+					do j=2,Nx-1
+						!print *, 'Leap-Frog'
+						do k=2,Ny-1
+
+							u(i+1,j,k) = u(i-1,j,k)-2*dt*(g* &
+								(eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
+							v(i+1,j,k) = v(i-1,j,k)-2*dt*(g* &
+								(eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
+							eta(i+1,j,k) = eta(i-1,j,k)-2*dt*(H(j,k)* &
+								((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
+                        
+						end do
+					end do
+				end if
+
+			end if
+
+        
+                        ! BC's : rigid wall
+
+                        u(i,1,:) = 0.
+                        u(i,Nx,:) = 0.
+                        v(i,:,1) = 0.
+                        v(i,:,Ny) = 0.
+
+			u(i+1,1,:)  = 0.
+                        u(i+1,Nx,:) = 0.
+                        v(i+1,:,1)  = 0.
+                        v(i+1,:,Ny) = 0.
+
+                        ! simple neuman
+                        eta(i+1,1,:)  = eta(i+1,2,:)
+                        eta(i+1,Nx,:) = eta(i+1,Nx-1,:)
+                        eta(i+1,:,1)  = eta(i+1,:,2)
+                        eta(i+1,:,Ny) = eta(i+1,:,Ny-1)
+
+
+                        if (IC == 'island') then
+                                ! island
+                                u(i,Ny/3+5:Ny/3+15,20:30) = 0.
+                                v(i,Ny/3+5:Ny/3+15,20:30) = 0.
+
+                                u(i+1,Ny/3+5:Ny/3+15,20:30) = 0
+                                v(i+1,Ny/3+5:Ny/3+15,20:30) = 0
+                        elseif (IC == 'detroit') then
+                                ! COTE GAUCHE
+                                u(i,Ny/3+5:Ny/3+15,1:24) = 0
+                                v(i,Ny/3+5:Ny/3+15,1:24) = 0
+
+                                u(i+1,Ny/3+5:Ny/3+15,1:24) = 0
+                                v(i+1,Ny/3+5:Ny/3+15,1:24) = 0
+
+                                ! COTE DROITE
+                                u(i,Ny/3+5:Ny/3+15,26:50) = 0
+                                v(i,Ny/3+5:Ny/3+15,26:50) = 0
+
+                                u(i+1,Ny/3+5:Ny/3+15,26:50) = 0
+                                v(i+1,Ny/3+5:Ny/3+15,26:50) = 0
+
+                        end if
+
+
+                end do
+
+	end subroutine
+
+
+
+
+
+
 
 
 end program
