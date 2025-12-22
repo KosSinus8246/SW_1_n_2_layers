@@ -17,7 +17,7 @@ zmin = float(np.min(eta))
 zmax = float(np.max(eta))
 zoff = zmin  # contour offset plane
 
-x, y = np.linspace(0,1,Nx), np.linspace(0,1,Ny)
+x, y = np.linspace(0,5000,Nx), np.linspace(0,5000,Ny)
 
 xx, yy = np.meshgrid(x,y)
 
