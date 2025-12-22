@@ -18,7 +18,7 @@ program SW1L
 
 	IC = 'center' ! choose : 'center', 'island', 'detroit'
 	rotating_frame = .true.
-	scheme = 'LPEF' ! chosse : 'EF', 'LP', 'LPEF'
+	scheme = 'LP' ! chosse : 'EF', 'LP', 'LPEF'
 
 
 	Lx = 5000
@@ -32,6 +32,7 @@ program SW1L
 
 	dt = 20
 	time = 5000
+	!time = 7000
 	Nt = time/dt
 
 	allocate(t(Nt), x(Nx), y(Ny))
@@ -57,8 +58,9 @@ program SW1L
 	! initial perturbation
 
 	call gaussian2D(x, y, eta, pi, Nx, Ny, pertur, IC)
-	eta(1,:,:) = pertur*1e6
-
+	eta(1,:,:) = pertur*2.5*1e5
+	
+	!u(1,:10,:) = 0.25
 
 	
 	if (rotating_frame .eqv. .false.) then
@@ -75,7 +77,7 @@ program SW1L
 
 
 	elseif (rotating_frame .eqv. .true.) then
-		print *, 'coriolis'
+		print *, Nt
 		f = 2*omega*sin(45.)
 		print *, f
 		
@@ -130,8 +132,8 @@ contains
 		Vy = sum((y - ybar)**2)/Ny
 
 		!std
-		sx = 0.25*(Vx**(0.5))
-		sy = 0.25*(Vy**(0.5))
+		sx = 0.25*(Vx**(0.5)) 
+		sy = 0.25*(Vy**(0.5)) 
 
 		! pas le droit en f90 de rentrer une valeur puis de la modifier comme ça
 		! stocker dans un tampon
@@ -164,7 +166,7 @@ contains
                         do j=2,Nx-1
                                 do k=2,Ny-1
 
-                                        print *,'Euler'
+                                        !print *,'Euler'
 					u(i+1,j,k) = u(i,j,k)-dt*(g* (eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
 					v(i+1,j,k) = v(i,j,k)-dt*(g* (eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
 					eta(i+1,j,k) = eta(i,j,k)-dt*(H(j,k)*((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
@@ -241,7 +243,7 @@ contains
 		do i=1,Nt-1					
 			if (i <= tspawn) then
 				do j=2,Nx-1
-				print *, 'Euler init'
+				!print *, 'Euler init'
 					do k=2,Ny-1
 						u(i+1,j,k) = u(i,j,k)-dt*(g* (eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
 						v(i+1,j,k) = v(i,j,k)-dt*(g* (eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
@@ -251,7 +253,7 @@ contains
 
 			else 
 				do j=2,Nx-1
-					print *, 'Leap-Frog'
+					!print *, 'Leap-Frog'
 					do k=2,Ny-1
 						u(i+1,j,k) = u(i-1,j,k)-2*dt*(g* (eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
 						v(i+1,j,k) = v(i-1,j,k)-2*dt*(g* (eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
@@ -330,7 +332,7 @@ subroutine integrator_LP_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
                 real(8), intent(inout) :: u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
 
                 tspawn = 3
-		inter = 50
+		inter = 40
 		ct = 1
 		r = 0
 
@@ -354,7 +356,7 @@ subroutine integrator_LP_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
 
                         else
 				if (i==inter*ct) then
-					do while (r < 3)
+					do while (r < 10)
 						do j=2,Nx-1
 							!print *, 'Euler'
 							do k=2,Ny-1
