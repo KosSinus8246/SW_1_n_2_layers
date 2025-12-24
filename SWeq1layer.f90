@@ -18,7 +18,7 @@ program SW1L
 
 	IC = 'detroit' ! choose : 'center', 'island', 'detroit'
 	rotating_frame = .true.
-	scheme = 'LP' ! chosse : 'EF', 'LP', 'LPEF'
+	scheme = 'LPEF' ! chosse : 'EF', 'LP', 'LPEF'
 
 
 	Lx = 5000
@@ -340,7 +340,7 @@ subroutine integrator_LP_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
 
                 do i=1,Nt-1
                         
-                        if (t(i) <= tspawn) then
+                        if (i <= tspawn) then
 				do j=2,Nx-1
 					!print *, 'Euler init'
 					do k=2,Ny-1
