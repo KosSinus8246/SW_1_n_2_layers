@@ -1,4 +1,4 @@
-program SW1L
+program SW2L
 	implicit none
 	
 	real(8) :: pi, omega, g, g2, Lx, Ly, dx, dy, dt, time, f, rho1, rho2, rho0
