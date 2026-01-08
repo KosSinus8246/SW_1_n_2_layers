@@ -1,4 +1,6 @@
-Here's some RSW codes that i need to update (it works but
-some functions aren't implemented correctly) : It's a for loop paradise ;)
+Rotating Linear Shallow Water codes in Fortran ! The Python version needs to be updated
+and will come back soon ! 
 
--- A Fortran90 version would be developped in the future --
+Integrator : Leap-Frog with centered finite differences
+
+Rigid wall for u,v and 0-Neumann for eta
