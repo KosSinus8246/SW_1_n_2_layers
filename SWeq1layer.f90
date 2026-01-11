@@ -16,9 +16,9 @@ program SW1L
 	g = 9.81
 	tspawn = 2
 
-	IC = 'detroit' ! choose : 'center', 'island', 'detroit'
+	IC = 'center' ! choose : 'center', 'island', 'detroit'
 	rotating_frame = .true.
-	scheme = 'LPEF' ! chosse : 'EF', 'LP', 'LPEF'
+	scheme = 'LP' ! chosse : 'EF', 'LP', 'LPEF'
 
 
 	Lx = 5000
@@ -311,145 +311,6 @@ contains
 		end do
 	
 	end subroutine
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! MIXTE : LEAP-FROG EULER
-
-
-
-
-subroutine integrator_LP_EF(Nt, Nx, Ny, u, v, eta, dx, dy, dt, g, H, f, IC)
-
-                integer :: tspawn, i, j, k
-		integer :: ct, inter, r    ! integers for the mix scheme
-
-
-                integer, intent(in) :: Nt, Nx, Ny
-                real(8), intent(in) :: dx, dy, dt, g, f
-                character(50), intent(in) :: IC
-
-                real(8), intent(inout) :: u(:,:,:), v(:,:,:), eta(:,:,:), H(:,:)
-
-                tspawn = 3
-		inter = 40
-		ct = 1
-		r = 0
-
-
-
-                do i=1,Nt-1
-                        
-                        if (i <= tspawn) then
-				do j=2,Nx-1
-					!print *, 'Euler init'
-					do k=2,Ny-1
-						u(i+1,j,k) = u(i,j,k)-dt*(g* &
-							(eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
-						v(i+1,j,k) = v(i,j,k)-dt*(g* &
-							(eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
-						eta(i+1,j,k) = eta(i,j,k)-dt*(H(j,k)* &
-							((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
-
-					end do
-				end do
-
-                        else
-				if (i==inter*ct) then
-					do while (r < 10)
-						do j=2,Nx-1
-							!print *, 'Euler'
-							do k=2,Ny-1
-
-								u(i+1,j,k) = u(i,j,k)-dt*(g* &
-									(eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
-								v(i+1,j,k) = v(i,j,k)-dt*(g* &
-									(eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
-								eta(i+1,j,k) = eta(i,j,k)-dt*(H(j,k)* &
-									((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
-							end do
-						end do
-
-						r = r+1
-
-
-					end do
-
-					ct = ct + 1
-					r = 0
-
-				else
-
-					do j=2,Nx-1
-						!print *, 'Leap-Frog'
-						do k=2,Ny-1
-
-							u(i+1,j,k) = u(i-1,j,k)-2*dt*(g* &
-								(eta(i,j+1,k)-eta(i,j-1,k))/(2*dx) + f*v(i,j,k))
-							v(i+1,j,k) = v(i-1,j,k)-2*dt*(g* &
-								(eta(i,j,k+1)-eta(i,j,k-1))/(2*dy) - f*u(i,j,k))
-							eta(i+1,j,k) = eta(i-1,j,k)-2*dt*(H(j,k)* &
-								((u(i,j+1,k)-u(i,j-1,k))/(2*dx) + (v(i,j,k+1)-v(i,j,k-1))/(2*dy)))
-                        
-						end do
-					end do
-				end if
-
-			end if
-
-        
-                        ! BC's : rigid wall
-
-                        u(i,1,:) = 0.
-                        u(i,Nx,:) = 0.
-                        v(i,:,1) = 0.
-                        v(i,:,Ny) = 0.
-
-			u(i+1,1,:)  = 0.
-                        u(i+1,Nx,:) = 0.
-                        v(i+1,:,1)  = 0.
-                        v(i+1,:,Ny) = 0.
-
-                        ! simple neuman
-                        eta(i+1,1,:)  = eta(i+1,2,:)
-                        eta(i+1,Nx,:) = eta(i+1,Nx-1,:)
-                        eta(i+1,:,1)  = eta(i+1,:,2)
-                        eta(i+1,:,Ny) = eta(i+1,:,Ny-1)
-
-
-                        if (IC == 'island') then
-                                ! island
-                                u(i,Ny/3+5:Ny/3+15,20:30) = 0.
-                                v(i,Ny/3+5:Ny/3+15,20:30) = 0.
-
-                                u(i+1,Ny/3+5:Ny/3+15,20:30) = 0
-                                v(i+1,Ny/3+5:Ny/3+15,20:30) = 0
-                        elseif (IC == 'detroit') then
-                                ! COTE GAUCHE
-                                u(i,Ny/3+5:Ny/3+15,1:24) = 0
-                                v(i,Ny/3+5:Ny/3+15,1:24) = 0
-
-                                u(i+1,Ny/3+5:Ny/3+15,1:24) = 0
-                                v(i+1,Ny/3+5:Ny/3+15,1:24) = 0
-
-                                ! COTE DROITE
-                                u(i,Ny/3+5:Ny/3+15,26:50) = 0
-                                v(i,Ny/3+5:Ny/3+15,26:50) = 0
-
-                                u(i+1,Ny/3+5:Ny/3+15,26:50) = 0
-                                v(i+1,Ny/3+5:Ny/3+15,26:50) = 0
-
-                        end if
-
-
-                end do
-
-	end subroutine
-
-
-
-
-
 
 
 

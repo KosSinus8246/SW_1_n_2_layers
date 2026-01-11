@@ -23,7 +23,7 @@ program SW2L
 	g2= g*(rho1 - rho2)/rho0  !reduced gravity
 
 
-	IC = 'detroit' ! choose : 'center', 'island', 'detroit'
+	IC = 'center' ! choose : 'center', 'island', 'detroit'
 	rotating_frame = .true.
 	scheme = 'LP' ! chosse : 'EF', 'LP', 'LPEF'
 
@@ -67,8 +67,10 @@ program SW2L
 	! initial perturbation
 
 	call gaussian2D(x, y, eta1, pi, Nx, Ny, pertur, IC)
-	eta1(1,:,:) = pertur*5*1e5
-	
+	!eta1(1,:,:) = pertur*5*1e5
+	eta2(1,:,:) = -pertur*1e5	
+
+
 	!u(1,:10,:) = 0.25
 
 	
