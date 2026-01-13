@@ -34,8 +34,8 @@ program SW2L
 	Nx = 50
 	Ny = 50
 
-	dx = Lx/Nx
-	dy = Ly/Ny
+	dx = Lx/(Nx-1)
+	dy = Ly/(Ny-1)
 
 	dt = 20
 	time = 5000
